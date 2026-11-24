@@ -164,6 +164,7 @@ class WebGame(unittest.TestCase):
         import json
         self.create_profile()
         saved = self.read_file("users.dat")
+        self.page.evaluate("() => new Promise((resolve,reject) => Module.FS.syncfs(false, e => e ? reject(e) : resolve()))")
         self.page.goto(self.url + "tools.html")
         with self.page.expect_download() as download:
             self.page.locator("#save-export").click(timeout=15000)
