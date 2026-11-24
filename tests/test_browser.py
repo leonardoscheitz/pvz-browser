@@ -241,7 +241,9 @@ class WebGame(unittest.TestCase):
         self.wait_engine()
         self.assertTrue(self.page.locator("#sandbox-indicator").is_visible())
         self.assertFalse(self.page.evaluate("Module.FS.analyzePath('/pvz-browser-goty').exists"))
-        self.assertFalse(self.page.evaluate("Module.FS.analyzePath('/saves/userdata/users.dat').exists"))
+        self.assertTrue(self.page.evaluate("Module.FS.analyzePath('/saves/userdata/users.dat').exists"))
+        self.assertNotEqual(before, self.read_file("users.dat"))
+        # The sandbox profile is generated in memory, never loaded from IDBFS.
         # Write a deliberately different file in the isolated filesystem.
         self.page.evaluate("""() => {
             Module.FS.mkdirTree('/saves/userdata');
