@@ -16,19 +16,11 @@ if (sandbox) {
   document.title = "Sandbox — PvZ GOTY+";
   toolsLink.textContent = "Sair do Sandbox";
   toolsLink.href = "./";
-  const toolbar = document.querySelector("#sandbox-toolbar");
-  const indicator = document.querySelector("#sandbox-indicator");
   document.body.classList.add("sandbox-session");
-  indicator.textContent = "Sandbox";
-  indicator.hidden = false;
-  toolbar.append(indicator, document.querySelector("#sandbox-level-trigger"),
-    document.querySelector("#garden-trigger"), toolsLink);
-  toolbar.hidden = false;
-  // Keep web toolbar gestures away from SDL's global input listeners.
-  for (const type of ["keydown", "keyup", "keypress", "pointerdown", "pointerup",
-      "mousedown", "mouseup", "touchstart", "touchend", "click"]) {
-    toolbar.addEventListener(type, event => event.stopPropagation());
-  }
+  // The full-size native canvas is never resized for web controls.
+  // Reuse the selector button; the exit action lives inside its modal.
+  document.querySelector("#sandbox-level-trigger").textContent = "Sandbox";
+  document.querySelector("#sandbox-indicator").hidden = true;
 }
 const bar = document.querySelector("[role=progressbar]");
 const progressText = document.querySelector("#progress-text");
@@ -191,7 +183,7 @@ async function start() {
   fs.unlink("/main.pak");
   if (!failed) {
     removeGarden = installGarden(module, canvas);
-    toolsLink.hidden = false;
+    toolsLink.hidden = sandbox;
     if (sandbox) installSandboxSelector(module);
   }
 }
@@ -201,6 +193,10 @@ function installSandboxSelector(module) {
   const dialog = document.querySelector("#sandbox-level-menu");
   const choices = dialog.querySelector("#sandbox-level");
   const status = dialog.querySelector("output");
+  // Move the existing exit link into the native-art Sandbox dialog.
+  // Its existing confirmation/navigation handler is preserved.
+  dialog.querySelector("form").append(toolsLink);
+  toolsLink.hidden = false;
   const areas = ["Dia", "Noite", "Piscina", "Neblina", "Telhado"];
   for (let area = 0; area < 5; area++) {
     const group = document.createElement("optgroup");
@@ -223,7 +219,7 @@ function installSandboxSelector(module) {
     const level = module._gardenSandboxMenu();
     if (!level || dialog.open) return;
     choices.value = String(Math.min(50, Math.max(1, level)));
-    status.textContent = "Escolha qualquer fase do Adventure.";
+    status.textContent = "Escolha uma fase ou saia do Sandbox.";
     dialog.showModal();
   });
   dialog.querySelector("form").addEventListener("submit", event => {
@@ -235,6 +231,7 @@ function installSandboxSelector(module) {
     } else status.textContent = "Volte ao menu principal para iniciar outra fase.";
   });
   dialog.querySelector("[data-close]").onclick = () => dialog.close();
+  dialog.addEventListener("close", () => canvas.focus({preventScroll: true}));
   for (const type of ["keydown", "keyup", "pointerdown", "pointerup", "touchstart", "touchend"])
     dialog.addEventListener(type, event => event.stopPropagation());
 }
