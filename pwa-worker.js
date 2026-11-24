@@ -9,7 +9,7 @@ self.addEventListener("install", event => {
       // Small batches avoid overwhelming memory and the connection on mobile.
       for (let i = 0; i < OFFLINE_FILES.length; i += 4) {
         await cache.addAll(OFFLINE_FILES.slice(i, i + 4).map(path =>
-          new Request(new URL(path, scope), {cache: "force-cache"})));
+          new Request(new URL(path, scope), {cache: path.startsWith("assets/") ? "force-cache" : "reload"})));
       }
     } catch (error) {
       await caches.delete(cacheName);
