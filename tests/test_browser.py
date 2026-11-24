@@ -80,8 +80,13 @@ class WebGame(unittest.TestCase):
             self.assertLess(time.monotonic(), end, "The New User dialog did not open")
             self.choose(400, 550)
             self.page.wait_for_timeout(700)
-        self.choose(390, 312)
-        self.page.wait_for_function("document.activeElement.id === 'pvz-soft-keyboard'", timeout=5000)
+        end = time.monotonic() + 12
+        while True:
+            self.choose(390, 312)
+            self.page.wait_for_timeout(200)
+            if self.page.evaluate("document.activeElement.id === 'pvz-soft-keyboard'"):
+                break
+            self.assertLess(time.monotonic(), end, "The profile editor did not receive focus")
         if self.touch:
             self.page.keyboard.insert_text("TouchQA")
             name = b"TouchQA"

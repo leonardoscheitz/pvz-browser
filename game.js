@@ -174,11 +174,13 @@ window.onGameExit = async () => {
 canvas.addEventListener("contextmenu", event => event.preventDefault());
 // A tap can move focus back to the canvas. Restore the editor during the
 // user gesture so mobile browsers can open or reopen their virtual keyboard.
-canvas.addEventListener("pointerup", () => {
+function focusProfileEditor() {
   if (window.Module?.wasmSoftKeyboardState?.active) {
     document.querySelector("#pvz-soft-keyboard").focus({ preventScroll: true });
   }
-});
+}
+canvas.addEventListener("pointerup", focusProfileEditor);
+canvas.addEventListener("click", focusProfileEditor);
 canvas.addEventListener("webglcontextcreationerror", () => fail(new Error("O navegador não conseguiu abrir o WebGL. Ative a aceleração gráfica e tente novamente.")));
 canvas.addEventListener("webglcontextlost", () => fail(new Error("A conexão com a placa de vídeo foi interrompida. Reabra o jogo.")));
 notice.querySelector("button").addEventListener("click", () => { notice.hidden = true; canvas.focus(); });

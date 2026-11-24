@@ -64,10 +64,18 @@ async function oldProfiles() {
 export async function reserveProfile() {
   if (!navigator.locks) return;
   return new Promise((resolve, reject) => {
-    navigator.locks.request("pvz-browser-goty-save", { ifAvailable: true }, lock => {
-      if (!lock) throw new Error("O jogo já está aberto em outra aba. Feche essa aba para continuar aqui.");
-      return new Promise(release => resolve(release)); // Closing the document also releases the lock.
-    }).catch(reject);
+    // A just-closed tab can keep its lock briefly while its document is torn down.
+    const waiting = new AbortController();
+    const timeout = setTimeout(() => waiting.abort(), 1000);
+    navigator.locks.request("pvz-browser-goty-save", { signal: waiting.signal }, () => {
+      clearTimeout(timeout);
+      return new Promise(release => resolve(release));
+    }).catch(error => {
+      clearTimeout(timeout);
+      reject(error.name === "AbortError"
+        ? new Error("O jogo já está aberto em outra aba. Feche essa aba para continuar aqui.")
+        : error);
+    });
   });
 }
 
