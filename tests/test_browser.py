@@ -71,8 +71,8 @@ class WebGame(unittest.TestCase):
     def read_file(self, name):
         return bytes(self.page.evaluate("p => Array.from(Module.FS.readFile(p))", MOUNT + name))
 
-    def create_profile(self):
-        self.page.goto(self.url)
+    def create_profile(self, url=None):
+        self.page.goto(url or self.url)
         self.wait_engine()
         # The title button only becomes active after the game's own resource loading and intro.
         end = time.monotonic() + 65
@@ -197,6 +197,32 @@ class WebGame(unittest.TestCase):
             self.page.locator("#save-export").wait_for()
         finally:
             self.context.set_offline(False)
+
+    def test_sandbox_never_mounts_campaign(self):
+        if os.environ.get("PVZ_BROWSER", "chromium") != "chromium":
+            self.skipTest("Sandbox isolation covered on Chromium")
+        self.create_profile()
+        self.page.evaluate("""() => new Promise((resolve, reject) =>
+            Module.FS.syncfs(false, error => error ? reject(error) : resolve()))""")
+        before = self.read_file("users.dat")
+        self.page.close()
+        self.page = self.context.new_page()
+        self.page.goto(self.url + "?sandbox=1")
+        self.wait_engine()
+        self.assertTrue(self.page.locator("#sandbox-indicator").is_visible())
+        self.assertFalse(self.page.evaluate("Module.FS.analyzePath('/pvz-browser-goty').exists"))
+        self.assertFalse(self.page.evaluate("Module.FS.analyzePath('/saves/userdata/users.dat').exists"))
+        # Write a deliberately different file in the isolated filesystem.
+        self.page.evaluate("""() => {
+            Module.FS.mkdirTree('/saves/userdata');
+            Module.FS.writeFile('/saves/userdata/users.dat', new Uint8Array([1,2,3]));
+        }""")
+        self.page.close()
+        self.page = self.context.new_page()
+        self.page.goto(self.url)
+        self.wait_engine()
+        self.assertTrue(self.page.locator("#sandbox-indicator").is_hidden())
+        self.assertEqual(before, self.read_file("users.dat"))
 
     def test_advanced_modifiers(self):
         if not os.environ.get("PVZ_REQUIRE_ADVANCED"):
