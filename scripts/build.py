@@ -65,6 +65,28 @@ def pack_resources(site, archive):
     return {"parts": parts, "size": sum(p["size"] for p in parts), "rawSize": raw_size}
 
 
+def publish_web_support(site):
+    for filename in ("tools.html", "pwa.js", "save-tools.js", "icon.svg"):
+        shutil.copyfile(ROOT / filename, site / filename)
+    manifest = {
+        "id": "./", "name": "Plants vs. Zombies GOTY Browser", "short_name": "PvZ GOTY",
+        "lang": "pt-BR", "start_url": "./", "scope": "./", "display": "standalone",
+        "background_color": "#100e0e", "theme_color": "#172519",
+        "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}],
+    }
+    (site / "manifest.webmanifest").write_text(json.dumps(manifest, ensure_ascii=False), encoding="utf-8")
+    files = sorted(["index.html", "tools.html", "pwa.js", "save-tools.js", "icon.svg", "manifest.webmanifest"] +
+                   [p.relative_to(site).as_posix() for p in (site / "assets").iterdir()])
+    worker = (ROOT / "pwa-worker.js").read_text(encoding="utf-8")
+    digest = hashlib.sha256(worker.encode("utf-8"))
+    for name in files:
+        digest.update(name.encode("utf-8"))
+        digest.update(hashlib.sha256((site / name).read_bytes()).digest())
+    header = "const BUILD_ID = " + json.dumps(digest.hexdigest()[:20]) + ";\n"
+    header += "const OFFLINE_FILES = " + json.dumps(files, separators=(",", ":")) + ";\n"
+    (site / "sw.js").write_text(header + worker, encoding="utf-8")
+
+
 def build(site):
     (site / "assets").mkdir()
     with engine_archive() as engine:
@@ -97,6 +119,7 @@ def build(site):
     for key, value in replacements.items():
         page = page.replace("{{" + key + "}}", value)
     (site / "index.html").write_text(page, encoding="utf-8")
+    publish_web_support(site)
     (site / ".nojekyll").touch()
     shutil.copytree(ROOT / "licenses", site / "licenses")
     shutil.copy(ROOT / "README.txt", site / "README.txt")
