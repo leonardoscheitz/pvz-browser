@@ -13,6 +13,7 @@ let received = 0;
 let lastPercent = -1;
 let persistent = false;
 let failed = false;
+let releaseProfile;
 
 function showMessage(text, action = "Tentar novamente") {
   document.querySelector("#message").textContent = text;
@@ -29,6 +30,7 @@ function notify(text) {
 function fail(error) {
   if (failed) return;
   failed = true;
+  if (!persistent) releaseProfile?.();
   console.error(error);
   showMessage(error.message || "O jogo não conseguiu iniciar.");
 }
@@ -43,14 +45,14 @@ function countBytes(count) {
   progressText.textContent = percent < 100 ? "Carregando " + percent + "%" : "Abrindo o jogo…";
 }
 
-async function fetchFile(asset) {
-  const response = await fetch(asset.url, { cache: "force-cache" });
+async function fetchFile(asset, signal) {
+  const response = await fetch(asset.url, { cache: "force-cache", signal });
   if (!response.ok) throw new Error("Falha ao carregar os arquivos do jogo (HTTP " + response.status + ").");
   return response;
 }
 
-async function decompressed(asset) {
-  const response = await fetchFile(asset);
+async function decompressed(asset, signal) {
+  const response = await fetchFile(asset, signal);
   const counter = new TransformStream({
     transform(chunk, controller) {
       countBytes(chunk.byteLength);
@@ -87,17 +89,35 @@ function initializeEngine() {
   });
 }
 
-async function loadPak() {
-  const reader = (await decompressed(config.pak)).getReader();
-  const data = new Uint8Array(config.pak.rawSize);
-  let offset = 0;
+async function readPakPart(part, destination, signal) {
+  const reader = (await decompressed(part, signal)).getReader();
+  let written = 0;
   for (;;) {
     const { value, done } = await reader.read();
     if (done) break;
-    data.set(value, offset);
-    offset += value.length;
+    if (written + value.length > destination.length) throw new Error("Parte do pacote de recursos inválida.");
+    destination.set(value, written);
+    written += value.length;
   }
-  if (offset !== data.length) throw new Error("O pacote de recursos do jogo chegou incompleto.");
+  if (written !== destination.length) throw new Error("O pacote de recursos do jogo chegou incompleto.");
+}
+
+async function loadPak() {
+  const data = new Uint8Array(config.pak.rawSize);
+  const parts = config.pak.parts.values();
+  const downloads = new AbortController();
+  async function readParts() {
+    for (const part of parts) {
+      await readPakPart(part, data.subarray(part.offset, part.offset + part.rawSize), downloads.signal);
+    }
+  }
+  // Small HTTP cache entries, with at most four inflaters writing into one final PAK buffer.
+  try {
+    await Promise.all(Array.from({ length: Math.min(4, config.pak.parts.length) }, readParts));
+  } catch (error) {
+    downloads.abort();
+    throw error;
+  }
   return data;
 }
 
@@ -118,7 +138,7 @@ async function start() {
   if (!window.WebAssembly || !window.DecompressionStream || !WebAssembly.instantiateStreaming) {
     throw new Error("Abra o jogo em uma versão atual do Chrome, Edge, Firefox ou Safari.");
   }
-  await reserveProfile();
+  releaseProfile = await reserveProfile();
   const [module, resources] = await Promise.all([initializeEngine(), gameAssets()]);
   const fs = module.FS;
   fs.writeFile("/main.pak", resources.pak, { canOwn: true });
@@ -142,6 +162,7 @@ window.onGameExit = async () => {
     try { await sync(window.Module.FS); }
     catch (error) { notify("O navegador não conseguiu gravar o último progresso."); console.warn(error); }
   }
+  releaseProfile?.();
   splash.hidden = false;
   showMessage("Jogo encerrado.", "Jogar novamente");
 };

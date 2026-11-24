@@ -1,5 +1,6 @@
 """Browser regressions against the fully built GOTY site. Requires Playwright for Python."""
 import functools
+import gzip
 import os
 import struct
 import threading
@@ -149,6 +150,21 @@ class WebGame(unittest.TestCase):
         self.wait_engine()
         self.assertTrue(self.page.locator("#notice").is_hidden())
         self.assertEqual(self.read_file("user1.dat"), bytes(profile["user1.dat"]))
+
+    def test_incomplete_part_releases_profile(self):
+        self.page.route("**/lawn-*.bin", lambda route: route.fulfill(
+            content_type="application/octet-stream", body=gzip.compress(b"short")), times=1)
+        self.page.goto(self.url)
+        self.page.locator("#panel:not([hidden])").wait_for()
+        self.assertIn("incompleto", self.page.locator("#message").text_content())
+        failed_page = self.page
+        self.page = self.context.new_page()
+        self.page.goto(self.url)
+        self.wait_engine()
+        self.page.close()
+        self.page = failed_page
+        self.page.locator("#retry").click()
+        self.wait_engine()
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ENGINE = ROOT / "vendor" / "pvz-portable-2493154.zip"
 ENGINE_SHA256 = "3a215c83f7544c7967253fe282ab86a5872f99daea7303ce5871f09cdb78d9e8"
 RESOURCE_DIRS = {"images", "data", "particles", "reanim", "sounds", "compiled"}
+PAK_PART_BYTES = 2 * 1024 * 1024
 XOR = bytes(value ^ 0xF7 for value in range(256))
 
 
@@ -31,7 +32,7 @@ def engine_archive():
     return ZipFile(io.BytesIO(data))
 
 
-def pack_resources(archive):
+def pack_resources(site, archive):
     # The engine's native PAK index has case-insensitive names and little-endian fields.
     entries = sorted((i for i in archive.infolist() if not i.is_dir()
                       and i.filename.partition("/")[0] in RESOURCE_DIRS),
@@ -43,12 +44,20 @@ def pack_resources(archive):
         header.write(struct.pack("BB", 0, len(name)) + name)
         header.write(struct.pack("<IQ", entry.file_size, 0))
     header.write(b"\x80")
-    output = io.BytesIO()
-    with gzip.GzipFile(fileobj=output, mode="wb", compresslevel=9, mtime=0) as compressed:
-        compressed.write(header.getvalue().translate(XOR))
+    parts = []
+    with tempfile.TemporaryFile() as pak:
+        pak.write(header.getvalue().translate(XOR))
         for entry in entries:
-            compressed.write(archive.read(entry).translate(XOR))
-    return output.getvalue(), header.tell() + sum(i.file_size for i in entries)
+            pak.write(archive.read(entry).translate(XOR))
+        raw_size = pak.tell()
+        pak.seek(0)
+        while raw := pak.read(PAK_PART_BYTES):
+            output = io.BytesIO()
+            with gzip.GzipFile(fileobj=output, mode="wb", compresslevel=9, mtime=0) as compressed:
+                compressed.write(raw)
+            part = publish_file(site, "lawn", "bin", output.getvalue())
+            parts.append({**part, "offset": pak.tell() - len(raw), "rawSize": len(raw)})
+    return {"parts": parts, "size": sum(p["size"] for p in parts), "rawSize": raw_size}
 
 
 def build(site):
@@ -58,9 +67,7 @@ def build(site):
         wasm = publish_file(site, "engine-wasm", "bin",
                             gzip.compress(engine.read("pvz-portable.wasm"), compresslevel=9, mtime=0))
     with ZipFile(ROOT / "modern" / "pvz-goty.zip") as archive:
-        packed, raw_size = pack_resources(archive)
-        pak = publish_file(site, "lawn", "bin", packed)
-        pak["rawSize"] = raw_size
+        pak = pack_resources(site, archive)
         properties = []
         for path in sorted(archive.namelist()):
             if path.startswith("properties/") and not path.endswith("/"):

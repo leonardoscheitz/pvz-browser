@@ -63,11 +63,10 @@ async function oldProfiles() {
 // An IDBFS instance syncs a whole directory snapshot. Two writers could drop each other's progress.
 export async function reserveProfile() {
   if (!navigator.locks) return;
-  await new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     navigator.locks.request("pvz-browser-goty-save", { ifAvailable: true }, lock => {
-      if (!lock) return reject(new Error("O jogo já está aberto em outra aba. Feche essa aba para continuar aqui."));
-      resolve();
-      return new Promise(() => {}); // The browser releases the lock when the document closes.
+      if (!lock) throw new Error("O jogo já está aberto em outra aba. Feche essa aba para continuar aqui.");
+      return new Promise(release => resolve(release)); // Closing the document also releases the lock.
     }).catch(reject);
   });
 }
