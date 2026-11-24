@@ -1,20 +1,61 @@
 <!doctype html>
 <html lang="pt-BR">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#eef3e8">
-<title>Plants vs. Zombies — Jogar</title>
-<style>
-:root{color-scheme:light;--paper:#eef3e8;--ink:#1c3a23;--green:#315c32}*{box-sizing:border-box}body{margin:0;padding:clamp(20px,5vw,56px);background:var(--paper);color:var(--ink);font:17px/1.6 'Segoe UI',sans-serif}main{max-width:960px;margin:auto}h1{font-size:clamp(32px,5vw,50px);line-height:1.1;text-wrap:balance}p{max-width:69ch}a{color:var(--green);text-underline-offset:4px}a:hover{color:var(--ink)}a:focus-visible{outline:3px solid var(--green);outline-offset:5px}.actions{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin:28px 0}.play{display:inline-flex;min-height:48px;padding:10px 26px;align-items:center;background:var(--green);color:#fff;border-radius:8px;text-decoration:none}.play:hover{background:var(--ink);color:#fff}.secondary{display:inline-flex;align-items:center;min-height:48px}img{display:block;max-width:100%;height:auto;border-radius:8px}figure{margin:32px 0}figcaption{font-size:15px;margin-top:10px}details{margin:26px 0}summary{cursor:pointer;min-height:44px}footer{margin-top:32px;font-size:14px}::selection{background:#c4df9b;color:var(--ink)}.skip{position:absolute;top:-100px}.skip:focus{top:8px;background:white;padding:8px}
-</style>
-<a class="skip" href="#jogar">Ir para o jogo</a>
-<main id="jogar">
-<h1>Plants vs. Zombies</h1>
-<p>A edição GOTY original do seu PC, emulada no navegador. Sem Steam.</p>
-<div class="actions"><a class="play" href="modern/boxedwine.html?app=pvz-goty&amp;p=PlantsVsZombies.exe&amp;resolution=1024x768&amp;sound=false&amp;root=wine11-web&amp;storage=indexeddb&amp;storageKey=pvz-goty&amp;extract=1">Jogar sem som</a><a class="secondary" href="modern/boxedwine.html?app=pvz-goty&amp;p=PlantsVsZombies.exe&amp;resolution=1024x768&amp;sound=true&amp;root=wine11-web&amp;storage=indexeddb&amp;storageKey=pvz-goty&amp;extract=1">Jogar com som experimental</a></div>
-<p>A primeira abertura baixa cerca de 150 MB e pode levar alguns minutos para carregar. Use um computador com Chrome ou Edge. Na tela inicial, clique em <span lang="en">Click to Start</span>.</p>
-<figure><img src="jogo-testado.jpg" width="1280" height="720" alt="Teste real do jogo original no navegador: primeira fase com uma ervilha plantada e custo de sol descontado."><figcaption>Teste realizado: menu, criação de perfil, primeira fase e plantio com o mouse.</figcaption></figure>
-<details><summary>Controles e progresso</summary><p>Use o mouse para selecionar sementes, plantar e recolher sóis. O teclado funciona nos campos de nome. Deixe a opção de prender o ponteiro desmarcada.</p><p>O emulador está configurado para armazenar os dados neste navegador. A recuperação do progresso após fechar a página ainda não foi verificada. Os saves da instalação do Windows não são importados.</p><p>Som, celular e todas as fases ainda não foram validados.</p></details>
-<footer><a href="README.txt">Instruções e verificações</a> · <a href="https://boxedwine.org/builds/">Boxedwine</a> · <a href="modern/LICENSE-Boxedwine.txt">Licença do emulador</a></footer>
-</main>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#100e0e">
+  <meta name="description" content="Jogue Plants vs. Zombies GOTY diretamente no navegador.">
+  <title>Plants vs. Zombies — Game of the Year</title>
+  <link rel="icon" href="data:,">
+  <link rel="preload" as="image" href="{{BACKGROUND}}">
+  <style>
+    * { box-sizing: border-box }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #100e0e; color: white; }
+    body { font: 16px/1.35 system-ui, sans-serif; }
+    [hidden] { display: none !important; }
+    #canvas-container { position: fixed; inset: 0; display: grid; place-items: center; background: #100e0e; }
+    #frame { position: relative; width: min(100vw, 133.333333vh); width: min(100vw, 133.333333dvh); aspect-ratio: 4/3; container-type: inline-size; }
+    #canvas, #splash { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
+    #canvas { display: block; outline: 0; touch-action: none; }
+    #splash { background: url('{{BACKGROUND}}') center / 100% 100% no-repeat; }
+    .logo { position: absolute; left: 6.25%; top: 2.5%; width: 87.5%; height: 19.333%;
+      background: url('{{LOGO}}') center / 100% 100% no-repeat;
+      mask: url('{{ALPHA}}') center / 100% 100% no-repeat; mask-mode: luminance; }
+    .track { position: absolute; left: 29.875%; top: 85.33%; width: 40.125%; height: 12%;
+      background: url('{{DIRT}}') left bottom / 100% 73.61% no-repeat; text-align: center; }
+    #grass { width: 97.82%; height: 45.83%; background: url('{{GRASS}}') left top / 100% 100% no-repeat;
+      clip-path: inset(0 calc(100% - var(--fill, 0%)) 0 0); }
+    #progress-text { position: absolute; left: 0; right: 0; top: 40%; color: #ffdc76;
+      font: bold clamp(10px, 2.35cqw, 28px)/1 Georgia, serif; text-shadow: 1px 2px 2px #220c07; }
+    #panel { position: absolute; inset: 0; display: grid; place-content: center; padding: 1rem; background: #100e0e99; }
+    .dialog { text-align: center; max-width: 27rem; padding: 1.25rem 1.5rem; border-radius: .4rem; background: #24211c; }
+    .dialog p { margin: 0 0 1rem; }
+    button { cursor: pointer; font: inherit; color: #fff7cb; background: #395720; border: 1px solid #91a76b; border-radius: .3rem; padding: .5rem 1.15rem; }
+    button:focus-visible { outline: 3px solid white; outline-offset: 3px; }
+    #notice { position: absolute; top: .6rem; left: 50%; transform: translateX(-50%); width: max-content;
+      max-width: 94%; padding: .45rem .7rem; border-radius: .3rem; background: #262114f2; font-size: .85rem; }
+    #notice button { margin-left: .5rem; padding: .1rem .45rem; }
+    .sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <main id="canvas-container" aria-label="Plants vs. Zombies">
+    <div id="frame">
+      <canvas id="canvas" width="800" height="600" tabindex="0" aria-label="Plants vs. Zombies GOTY">Seu navegador precisa oferecer suporte a canvas.</canvas>
+      <div id="splash">
+        <span class="logo" aria-hidden="true"></span>
+        <div class="track" role="progressbar" aria-label="Carregando o jogo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div id="grass"></div><span id="progress-text">Carregando…</span>
+        </div>
+      </div>
+      <div id="panel" hidden>
+        <div class="dialog"><p id="message" role="status"></p><button id="retry" type="button">Tentar novamente</button></div>
+      </div>
+      <div id="notice" role="status" hidden><span></span><button type="button" aria-label="Fechar aviso">OK</button></div>
+      <noscript><div id="panel"><div class="dialog">Ative o JavaScript para jogar.</div></div></noscript>
+    </div>
+  </main>
+  <script id="config" type="application/json">{{CONFIG}}</script>
+  <script type="module" src="{{SCRIPT}}"></script>
+</body>
 </html>

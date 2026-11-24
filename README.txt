@@ -1,66 +1,58 @@
-PLANTS VS. ZOMBIES GOTY — ORIGINAL EMULADO NO NAVEGADOR
+PLANTS VS. ZOMBIES GOTY NO NAVEGADOR
 
-FUNCIONOU: menu, perfil temporário, modo Aventura, primeira fase, seleção da
-ervilha e plantio. O custo de sol foi descontado corretamente.
-Não depende da Steam. Não é uma recriação nem uma conversão do código-fonte.
-Destino da publicação: https://leonardoscheitz.github.io/pvz-browser/
-Estado do deploy: https://github.com/leonardoscheitz/pvz-browser/actions
+Jogar: https://leonardoscheitz.github.io/pvz-browser/
+O endereço abre diretamente o jogo. Clique em “Click to Start”, crie o perfil e
+entre em Adventure. O menu Options do jogo controla a música, os efeitos e a
+tela cheia. Use o mouse ou toque para escolher sementes, plantar e recolher sol.
+O jogo usa os textos em inglês presentes na cópia GOTY deste repositório.
 
-JOGAR LOCALMENTE
-Execute Servir.ps1 com PowerShell e abra http://127.0.0.1:8765/index.html
-Se já houver um servidor nessa porta, use o endereço acima.
-Escolha Jogar sem som, a configuração validada. A primeira inicialização baixa
-cerca de 150 MB e pode levar alguns minutos. Use Chrome ou Edge no computador.
+MOTOR E RECURSOS
+O motor comunitário PvZ-Portable (revisão 2493154) roda em WebAssembly, usa WebGL para
+desenhar e Web Audio para tocar as músicas e os efeitos do GOTY. Aventura,
+Mini-Games, Puzzle, Survival, Zen Garden, Almanac e Zombatar fazem parte do
+motor. Os desbloqueios seguem o progresso do perfil.
 
-EDIÇÃO TESTADA
-C:/Program Files (x86)/Plants vs. Zombies GOTY Edition
-Executável original SHA256:
-1FF5A2DCF009B453B8866783A68E8D04BD0D066ABDA3F8196D75A677366B2DFF
-A instalação original não foi alterada. O pacote contém uma cópia do jogo.
-Na cópia de emulação, ddraw.dll e wined3d.dll da pasta do jogo foram omitidas
-para usar o DirectDraw/WineD3D do emulador. O executável e os recursos originais
-foram preservados. Nenhum arquivo ou biblioteca da Steam foi incluído.
+O build lê modern/pvz-goty.zip e empacota as imagens, animações, sons, fontes e
+definições do jogo. Somente a pasta dist é publicada. O executável de Windows,
+o instalador, os componentes da EA e o sistema Wine ficam fora do site. Os
+links antigos para modern/boxedwine.html redirecionam para o jogo nativo.
+Os recursos estáticos têm nomes versionados por conteúdo e usam o cache HTTP
+do navegador. Descompactação e compilação do WASM ocorrem durante a leitura.
 
-EMULADOR
-Boxedwine build oficial master 149, SingleThreadedJit.
-Commit: 24dd867e08bd8f1e514372ce0a30f21ab15e0a4e
-Build: https://boxedwine.org/builds/branches/master/builds/149/artifacts/build-149.zip
-Fonte: https://github.com/danoon2/Boxedwine/tree/24dd867e08bd8f1e514372ce0a30f21ab15e0a4e
-Filesystem: https://boxedwine.org/v2/44/TinyCore15Wine11.0-web.zip
-Licença: modern/LICENSE-Boxedwine.txt
-O build antigo 26R1 não desenhava o jogo corretamente. O build atualizado
-com JIT e WineD3D/WebGL foi o que funcionou.
+PROGRESSO
+O motor guarda os perfis e as partidas no IndexedDB deste navegador e endereço.
+Use “Main Menu” dentro da fase para o jogo salvar o ponto de retomada. Há uma
+única aba com permissão de escrita por vez nos navegadores com Web Locks.
+Apagar os dados do site remove o progresso. O jogo avisa se o navegador só
+permitir uma sessão temporária.
 
-VERIFICAÇÕES E LIMITES
-- Menu e criação de perfil pelo teclado: verificados.
-- Mouse, seleção da semente e plantio na fase 1-1: verificados.
-- Executável instalado: hash mantido.
-- Nenhuma biblioteca Steam incluída: conferido no pacote.
-- Áudio: não validado; opção com som é experimental.
-- Todas as fases, finalização da campanha e celulares: não testados.
-- IndexedDB: inicialização e extração verificadas; recuperação do progresso
-  após fechar a página ainda não validada.
+Na primeira abertura, se este navegador tiver um perfil global da antiga
+emulação no mesmo endereço, o site copia users.dat e userN.dat. Isso recupera
+nome, fase e desbloqueios. Ondas em andamento da emulação ficam no banco antigo.
 
-GITHUB PAGES
-O build de uma thread não precisa de cabeçalhos COOP/COEP.
-Os caminhos são relativos, inclusive para subpastas de repositórios.
-Inclui .nojekyll e workflow de deploy. O maior arquivo tem cerca de 92 MiB,
-abaixo do limite Git de 100 MiB por arquivo. Envie por Git; o upload pelo site
-do GitHub possui limite menor.
-O script Publicar.ps1 cria leonardoscheitz/pvz-browser e ativa o GitHub Pages.
-Requer GitHub CLI oficial e login com gh auth login.
-O repositório pvz-browser foi reservado para este jogo; outros projetos não
-fazem parte desta publicação.
+DESENVOLVIMENTO LOCAL
+Com Python 3.9 ou superior, na raiz do repositório:
+  python scripts/build.py
+  python -m http.server 8765 --bind 127.0.0.1 --directory dist
+Abra http://127.0.0.1:8765/. No Windows, Servir.ps1 prepara e serve o site.
 
-PRIVACIDADE
-O servidor local só escuta em 127.0.0.1. Não há credenciais, perfis de navegador
-ou sessões da Steam no pacote. O teste usou um perfil novo e temporário.
-Jogo e bibliotecas proprietárias mantêm as próprias licenças.
+O ZIP oficial do motor está versionado em vendor. O build verifica seu SHA-256
+e pode ser executado offline apenas com a biblioteca padrão do Python.
 
-SKILLS
-Consultadas as dez skills de sites indicadas. Diretrizes pertinentes de
-Frontend Design, Impeccable, UI/UX Pro Max, Bencium e Web Design Guidelines
-aplicadas à página de entrada. React, Composition Patterns e React Native
-não se aplicam a este HTML estático. Grill Me referencia grilling, ferramenta
-indisponível; requisitos essenciais esclarecidos na conversa. AccessLint foi
-consultada, sem motor de auditoria disponível. Sem declaração WCAG para o jogo.
+PUBLICAÇÃO
+O workflow em .github/workflows/pages.yml prepara o site no push para main e
+envia dist ao GitHub Pages. Publicar.ps1 refaz o deploy do main remoto com gh.
+Execuções: https://github.com/leonardoscheitz/pvz-browser/actions/workflows/pages.yml
+
+CRÉDITOS
+Plants vs. Zombies, seus gráficos, áudios e textos pertencem a PopCap Games /
+Electronic Arts. O motor comunitário é distribuído sob LGPL-3.0-or-later.
+A integração usa os binários publicados sem alterar o código do motor.
+Fonte correspondente e instruções de compilação:
+https://github.com/wszqkzqk/PvZ-Portable/tree/2493154028b8542a58bc2caed14fda83b1b7c57e
+Build oficial: https://github.com/wszqkzqk/PvZ-Portable/actions/runs/45099544349
+SHA-256 do ZIP: 3a215c83f7544c7967253fe282ab86a5872f99daea7303ce5871f09cdb78d9e8
+Licenças: licenses/PvZ-Portable-LGPL.txt, licenses/GPL.txt,
+licenses/PopCap-Framework.txt e licenses/fcaseopen.txt.
+This product includes portions of the PopCap Games Framework, © 2005-2009
+PopCap Games, Inc. All rights reserved. (http://popcapframework.sourceforge.net/).

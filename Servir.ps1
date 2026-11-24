@@ -1,5 +1,14 @@
 $ErrorActionPreference = 'Stop'
-$siteRoot = [System.IO.Path]::GetFullPath($PSScriptRoot)
+$siteRoot = Join-Path $PSScriptRoot 'dist'
+$builder = Join-Path $PSScriptRoot 'scripts/build.py'
+if (Get-Command py -ErrorAction SilentlyContinue) {
+    & py -3 $builder
+} elseif (Get-Command python -ErrorAction SilentlyContinue) {
+    & python $builder
+} else {
+    throw 'Instale o Python 3 para preparar os arquivos do jogo ou abra https://leonardoscheitz.github.io/pvz-browser/'
+}
+if ($LASTEXITCODE -ne 0) { throw 'Falha ao preparar a versão nativa.' }
 $listener = [System.Net.HttpListener]::new()
 $listener.Prefixes.Add('http://127.0.0.1:8765/')
 try {
@@ -16,8 +25,7 @@ try {
             $response.Close()
             continue
         }
-        $response.Headers['Cross-Origin-Opener-Policy'] = 'same-origin'
-        $response.Headers['Cross-Origin-Embedder-Policy'] = 'require-corp'
+        if ($relative.StartsWith('assets/')) { $response.Headers['Cache-Control'] = 'public, max-age=31536000, immutable' }
         $response.ContentType = switch ([System.IO.Path]::GetExtension($filePath)) {
             '.html' { 'text/html; charset=utf-8' }
             '.js' { 'application/javascript' }
