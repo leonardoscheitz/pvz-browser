@@ -9,6 +9,22 @@ Abrir o menu pausa a partida. Você pode ajustar sol e moedas, alternar o planti
 grátis, mudar a velocidade, curar plantas e remover os zumbis presentes.
 O saldo de moedas é salvo no perfil. Use Voltar ao jogo para continuar.
 
+Modo livre configura sol máximo, plantio grátis e velocidade normal.
+Regras normais desativa o plantio grátis e restaura a velocidade normal; não
+desfaz alterações anteriores de sol, moedas ou plantas.
+
+FERRAMENTAS DO JARDIM
+O botão Ferramentas permite preparar os arquivos para uso offline, exportar
+o progresso em JSON e restaurar um backup. Saia da fase pelo Main Menu antes
+de abrir Ferramentas. A restauração exige Web Locks e uma única aba; valida
+a estrutura do backup, mantém uma cópia anterior e usa uma transação atômica.
+O arquivo exportado pode ser guardado em outro dispositivo. Abra o jogo pelo
+menos uma vez no destino para inicializar o banco antes de importar.
+O modo offline usa um Service Worker e um cache versionado; a preparação
+inicial requer internet e espaço livre. Para atualizar a versão offline,
+feche as outras abas e reabra o jogo. Os navegadores podem remover o cache.
+A instalação pelo menu do navegador depende do suporte a PWA.
+
 O jogo usa os textos em inglês presentes na cópia GOTY deste repositório.
 
 MOTOR E RECURSOS
