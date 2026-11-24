@@ -3,6 +3,87 @@
 #include <emscripten/emscripten.h>
 #include "Lawn/SeedPacket.h"
 
+// Sandbox is explicitly enabled by the web launcher BEFORE callMain, which
+// runs with a fresh MEMFS /saves directory. Classic sessions never set it.
+static bool gardenSandbox = false;
+static int gardenSandboxStartLevel = 1;
+
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenSandboxEnable(int level)
+{
+    if (gLawnApp || level < 1 || level > 50) return 0;
+    gardenSandbox = true;
+    gardenSandboxStartLevel = level;
+    return 1;
+}
+
+static void GardenInitializeSandbox(LawnApp* app)
+{
+    if (!gardenSandbox) return;
+    PlayerInfo* profile = app->mProfileMgr->AddProfile("Sandbox");
+    if (!profile) profile = app->mProfileMgr->GetProfile("Sandbox");
+    if (!profile) return;
+    app->mPlayerInfo = profile;
+    profile->mLevel = gardenSandboxStartLevel;
+    profile->mFinishedAdventure = 2;
+    profile->mCoins = 99999;
+    profile->mHasUnlockedMinigames = 1;
+    profile->mHasUnlockedPuzzleMode = 1;
+    profile->mHasUnlockedSurvivalMode = 1;
+    profile->mHasSeenUpsell = 1;
+    profile->mNeedsMessageOnGameSelector = 0;
+    profile->mNeedsMagicTacoReward = 0;
+    profile->mHasSeenStinky = 1;
+    const StoreItem unlocks[] = {
+        STORE_ITEM_PLANT_GATLINGPEA, STORE_ITEM_PLANT_TWINSUNFLOWER,
+        STORE_ITEM_PLANT_GLOOMSHROOM, STORE_ITEM_PLANT_CATTAIL,
+        STORE_ITEM_PLANT_WINTERMELON, STORE_ITEM_PLANT_GOLD_MAGNET,
+        STORE_ITEM_PLANT_SPIKEROCK, STORE_ITEM_PLANT_COBCANNON,
+        STORE_ITEM_PLANT_IMITATER, STORE_ITEM_POOL_CLEANER,
+        STORE_ITEM_ROOF_CLEANER, STORE_ITEM_PHONOGRAPH,
+        STORE_ITEM_GARDENING_GLOVE, STORE_ITEM_MUSHROOM_GARDEN,
+        STORE_ITEM_WHEEL_BARROW, STORE_ITEM_AQUARIUM_GARDEN,
+        STORE_ITEM_TREE_OF_WISDOM
+    };
+    for (auto item : unlocks) profile->mPurchases[item] = 1;
+    profile->mPurchases[STORE_ITEM_PACKET_UPGRADE] = 4;
+    for (auto item : {STORE_ITEM_FERTILIZER, STORE_ITEM_BUG_SPRAY,
+                      STORE_ITEM_CHOCOLATE, STORE_ITEM_TREE_FOOD})
+        profile->mPurchases[item] = PURCHASE_COUNT_OFFSET + 5;
+    // Same unlock-record convention as upstream's Full Unlock preview profile.
+    for (int i = 1; i <= 100; ++i) {
+        if (i != static_cast<int>(GameMode::GAMEMODE_TREE_OF_WISDOM) &&
+            i != static_cast<int>(GameMode::GAMEMODE_SCARY_POTTER_ENDLESS) &&
+            i != static_cast<int>(GameMode::GAMEMODE_PUZZLE_I_ZOMBIE_ENDLESS) &&
+            i != static_cast<int>(GameMode::GAMEMODE_SURVIVAL_ENDLESS_STAGE_3))
+            profile->mChallengeRecords[i - 1] = 20;
+    }
+    profile->mChallengeRecords[static_cast<int>(GameMode::GAMEMODE_TREE_OF_WISDOM) - 1] = 1;
+    profile->SaveDetails();
+    app->mProfileMgr->Save();
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenSandboxMenu()
+{
+    if (!gardenSandbox || !gLawnApp || !gLawnApp->mPlayerInfo ||
+        gLawnApp->mGameScene != GameScenes::SCENE_MENU || gLawnApp->GetDialogCount() ||
+        !gLawnApp->mGameSelector) return 0;
+    auto* selector = gLawnApp->mGameSelector.get();
+    if (selector->mSelectorState != SelectorAnimState::SELECTOR_IDLE ||
+        selector->mStartingGame || selector->mLoading ||
+        selector->mSlideCounter || selector->mX || selector->mY) return 0;
+    return gLawnApp->mPlayerInfo->mLevel;
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenSandboxLevel(int level)
+{
+    if (!gardenSandboxMenu() || level < 1 || level > 50) return 0;
+    gLawnApp->mPlayerInfo->mLevel = level;
+    // NewGame handles the normal stage intro, seed chooser and board rules.
+    gLawnApp->KillGameSelector();
+    gLawnApp->PreNewGame(GameMode::GAMEMODE_ADVENTURE, false);
+    return 1;
+}
+
 // Session-only modifiers, never serialized. Reset before destroying a board.
 static bool gardenInfiniteSun = false;
 static bool gardenInstantRecharge = false;
