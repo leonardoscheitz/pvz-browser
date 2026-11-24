@@ -80,3 +80,16 @@
 @media (max-width: 660px) { .pvz-workshop .pvz-grid { grid-template-columns: minmax(0,1fr); }
   .pvz-panel { padding: 28px 22px 30px; } .pvz-panel-art { grid-template: 35px minmax(0,1fr) 35px / 35px minmax(0,1fr) 35px; } }
 @media (prefers-reduced-motion: reduce) { .pvz-stone { transition: none; } }
+
+/* Adventure selector reuses the authentic Options tombstone and button sprites. */
+#sandbox-level-trigger { position:absolute; left: max(5px,env(safe-area-inset-left)); top: max(5px,env(safe-area-inset-top)); z-index:2; font-size:clamp(12px,2cqw,18px); }
+#sandbox-level-menu { border:0; background:transparent; color:#fff1cb; padding:0; margin:auto; max-width:96vw; max-height:96dvh; overflow:auto; }
+#sandbox-level-menu::backdrop { background:#08070bb8; }
+.sandbox-stone-card { position:relative; width:min(420px,94vw); height:min(490px,94dvh); min-height:230px; isolation:isolate; }
+.sandbox-stone-card::before { content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; background:var(--pvz-grave) center/100% 100% no-repeat; mask:var(--pvz-grave-mask) center/100% 100% no-repeat; mask-mode:luminance; }
+.sandbox-stone-card form { position:absolute; inset:23% 14% 18%; display:flex; flex-direction:column; gap:6px; align-items:stretch; overflow:auto; text-align:center; font: bold 16px/1.25 var(--pvz-display); }
+.sandbox-stone-card h2 { margin:0 0 4px; font-size:24px; }
+.sandbox-stone-card select { width:100%; min-height:40px; font:inherit; background:#2e292e; color:#fff1cb; border:1px solid #aaa197; border-radius:4px; }
+.sandbox-stone-card output { font:13px/1.25 system-ui,sans-serif; }
+.sandbox-stone-card .pvz-stone { flex-shrink:0; min-height:40px; }
+@media(max-height:450px) { .sandbox-stone-card { width:min(550px,94vw); } .sandbox-stone-card form { inset:15% 15% 12%; } }
