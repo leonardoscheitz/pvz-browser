@@ -16,7 +16,19 @@ if (sandbox) {
   document.title = "Sandbox — PvZ GOTY+";
   toolsLink.textContent = "Sair do Sandbox";
   toolsLink.href = "./";
-  document.querySelector("#sandbox-indicator").hidden = false;
+  const toolbar = document.querySelector("#sandbox-toolbar");
+  const indicator = document.querySelector("#sandbox-indicator");
+  document.body.classList.add("sandbox-session");
+  indicator.textContent = "Sandbox";
+  indicator.hidden = false;
+  toolbar.append(indicator, document.querySelector("#sandbox-level-trigger"),
+    document.querySelector("#garden-trigger"), toolsLink);
+  toolbar.hidden = false;
+  // Keep web toolbar gestures away from SDL's global input listeners.
+  for (const type of ["keydown", "keyup", "keypress", "pointerdown", "pointerup",
+      "mousedown", "mouseup", "touchstart", "touchend", "click"]) {
+    toolbar.addEventListener(type, event => event.stopPropagation());
+  }
 }
 const bar = document.querySelector("[role=progressbar]");
 const progressText = document.querySelector("#progress-text");
