@@ -104,6 +104,17 @@ def run(driver, url):
         for turn in range(2):
             tap_element(trigger)
             wait.until(lambda d: d.execute_script("return document.querySelector('#garden-menu').open && Module._gardenState(4) === 1"))
+            size = driver.execute_script("""
+                const r = document.querySelector('.garden-card').getBoundingClientRect();
+                const controls = document.querySelector('.garden-controls').getBoundingClientRect();
+                const el = document.querySelector('#garden-free');
+                const f = el.getBoundingClientRect();
+                return [r.width, r.height, controls.height, r.bottom <= visualViewport.height + 1,
+                        document.elementFromPoint(f.x + f.width/2, f.y + f.height/2) === el];
+            """)
+            if not (size[0] > 200 and size[1] > 200 and size[2] > 100 and all(size[3:])):
+                raise AssertionError(f"Garden panel clipped or covered: {size}")
+            print("iOS garden dimensions and hit test", size, flush=True)
             free = driver.find_element(By.ID, "garden-free")
             tap_element(free)
             wait.until(lambda d: d.execute_script("return Module._gardenState(2)") == (1 - turn))

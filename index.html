@@ -43,14 +43,19 @@
       padding: .48em .85em .58em .45em; border: 0; color: #def798; text-shadow: 1px 2px 2px #181321;
       display: flex; align-items: center; gap: .15em; font-size: clamp(12px,1.85cqw,19px); }
     #garden-trigger img { width: 1.4em; height: 1.4em; }
-    #garden-menu { position: fixed; inset: 0; margin: auto; width: min(96vw, 420px, 84dvh);
-      aspect-ratio: 423/498; max-height: 98dvh; padding: 0; border: 0; background: transparent; color: #fff1cb;
-      font: bold clamp(13px,min(3.8vw,3.5dvh),18px)/1.2 Georgia, serif; overflow: visible; }
+    #garden-menu { position: fixed; inset: 0 auto auto 0; margin: 0; border: 0; padding: 0;
+      width: 100vw; height: 100vh; height: 100dvh; max-width: none; max-height: none;
+      background: transparent; color: #fff1cb; overflow: hidden;
+      font: bold clamp(14px, 2.6vmin, 18px)/1.2 Georgia, serif; }
+    #garden-menu[open] { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; }
+    .garden-card { position: relative; width: min(420px, 95vw); height: clamp(465px, 119vw, 496px);
+      max-width: 96%; max-height: 96%; }
     #garden-menu::backdrop { background: #08070bb8; }
-    #garden-menu::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+    .garden-card::before { content: ""; position: absolute; inset: 0; pointer-events: none;
       background: url('{{GRAVE}}') center / 100% 100%; mask: url('{{GRAVE_MASK}}') center / 100% 100%; mask-mode: luminance; }
     .garden-controls { position: absolute; inset: 24% 17% 24%; overflow-y: auto; scrollbar-width: thin;
       display: flex; flex-direction: column; gap: .35em; padding: 2px 3px 6px; }
+    .garden-controls > * { flex-shrink: 0; }
     .garden-controls h2 { color: #ffe89a; text-align: center; font-size: 1.35em; margin: 0 0 .1em; text-shadow: 1px 2px #201822; }
     .garden-row { margin: 0; display: flex; gap: .35em; align-items: center; justify-content: space-between; min-height: 1.7em; }
     .garden-row label { margin-right: auto; }
@@ -82,8 +87,14 @@
       .garden-controls button, .garden-controls select, .garden-row { min-height: 34px; }
       #garden-back { min-height: 38px; }
     }
-    @media (any-pointer: coarse) and (orientation: landscape) and (max-height: 540px) {
-      #garden-menu { width: min(70vw, 480px); height: 96dvh; aspect-ratio: auto; }
+    @media (orientation: landscape) and (max-height: 540px) {
+      .garden-card { width: min(94vw, 720px); height: 96%; }
+      .garden-controls { inset: 22% 13% 24%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-content: start; align-items: center; gap: .3em .8em; }
+      .garden-controls h2, .garden-actions { grid-column: 1 / -1; }
+      .garden-row { gap: .2em; }
+      .garden-controls input[type=number] { width: 4.75em; }
+      .garden-actions { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -100,8 +111,15 @@
         </div>
       </div>
       <button id="garden-trigger" type="button" aria-haspopup="dialog" aria-controls="garden-menu" hidden><img src="{{SPADE}}" alt="">Menu Hack</button>
+      <div id="panel" hidden>
+        <div class="dialog"><p id="message" role="status"></p><button id="retry" type="button">Tentar novamente</button></div>
+      </div>
+      <div id="notice" role="status" hidden><span></span><button type="button" aria-label="Fechar aviso">OK</button></div>
+      <noscript><div id="panel"><div class="dialog">Ative o JavaScript para jogar.</div></div></noscript>
+    </div>
       <dialog id="garden-menu" aria-labelledby="garden-title">
-        <div class="garden-controls">
+        <div class="garden-card">
+          <div class="garden-controls">
           <h2 id="garden-title">Menu Hack</h2>
           <form class="garden-row"><label for="garden-sun">Sol</label><input id="garden-sun" type="number" min="0" max="9990" required inputmode="numeric"><button>Aplicar</button></form>
           <form class="garden-row"><label for="garden-coins">Moedas</label><input id="garden-coins" type="number" min="0" max="999990" step="10" required inputmode="numeric"><button>Aplicar</button></form>
@@ -111,13 +129,8 @@
         </div>
         <output aria-live="polite"></output>
         <button id="garden-back" autofocus>Voltar ao jogo</button>
+        </div>
       </dialog>
-      <div id="panel" hidden>
-        <div class="dialog"><p id="message" role="status"></p><button id="retry" type="button">Tentar novamente</button></div>
-      </div>
-      <div id="notice" role="status" hidden><span></span><button type="button" aria-label="Fechar aviso">OK</button></div>
-      <noscript><div id="panel"><div class="dialog">Ative o JavaScript para jogar.</div></div></noscript>
-    </div>
   </main>
   <script id="config" type="application/json">{{CONFIG}}</script>
   <script type="module" src="{{SCRIPT}}"></script>

@@ -37,6 +37,14 @@ export function installGarden(module, canvas) {
   const coins = menu.querySelector("#garden-coins");
   const panel = document.querySelector("#panel");
   let resume = false;
+  const viewport = window.visualViewport;
+  function fitMenu() {
+    if (!menu.open || !viewport) return;
+    menu.style.width = viewport.width + "px";
+    menu.style.height = viewport.height + "px";
+    menu.style.top = viewport.offsetTop + "px";
+    menu.style.left = viewport.offsetLeft + "px";
+  }
 
   function updateAvailability() {
     const available = module._gardenState(0) >= 0;
@@ -68,6 +76,9 @@ export function installGarden(module, canvas) {
     speed.value = module._gardenState(3);
     message.textContent = "Partida pausada";
     menu.showModal();
+    fitMenu();
+    viewport?.addEventListener("resize", fitMenu);
+    viewport?.addEventListener("scroll", fitMenu);
   });
 
   for (const [input, field, feedback] of [[sun, 0, "Quantidade de sol aplicada."], [coins, 1, "Saldo de moedas aplicado."]]) {
@@ -83,6 +94,8 @@ export function installGarden(module, canvas) {
   menu.querySelector("#garden-clear").onclick = () => change(6, 0, "Zumbis do gramado removidos.");
   menu.querySelector("#garden-back").onclick = () => menu.close();
   menu.addEventListener("close", () => {
+    viewport?.removeEventListener("resize", fitMenu);
+    viewport?.removeEventListener("scroll", fitMenu);
     if (resume) module._gardenChange(4, 0);
     resume = false;
     canvas.focus({preventScroll: true});
