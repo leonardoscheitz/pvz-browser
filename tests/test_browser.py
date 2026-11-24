@@ -198,6 +198,42 @@ class WebGame(unittest.TestCase):
         finally:
             self.context.set_offline(False)
 
+    def test_advanced_modifiers(self):
+        if not os.environ.get("PVZ_REQUIRE_ADVANCED"):
+            self.skipTest("Requires newly compiled native extension")
+        self.create_profile()
+        trigger = self.page.locator("#garden-trigger")
+        end = time.monotonic() + 60
+        while trigger.is_hidden():
+            self.assertLess(time.monotonic(), end, "Adventure did not reach the lawn")
+            self.choose(545, 133)
+            self.page.wait_for_timeout(700)
+        trigger.click()
+        state = lambda field: self.page.evaluate("f => Module._gardenState(f)", field)
+        self.assertEqual(state(7), 0)
+        self.assertEqual(state(8), 0)
+        self.page.locator("#garden-infinite").check()
+        self.page.locator("#garden-recharge").check()
+        self.assertEqual(state(7), 1)
+        self.assertEqual(state(8), 1)
+        self.page.locator("#garden-chill").click()
+        self.page.locator("#garden-back").click()
+        self.page.wait_for_function("Module._gardenState(4) === 0")
+        # Spending sun should be replenished by the native update loop.
+        self.page.evaluate("Module._gardenChange(0, 250)")
+        self.page.wait_for_function("Module._gardenState(0) === 9990")
+        trigger.click()
+        self.page.locator("#garden-normal").click()
+        self.assertEqual(state(7), 0)
+        self.assertEqual(state(8), 0)
+        self.assertEqual(state(2), 0)
+        self.assertEqual(state(3), 1)
+        self.page.locator("#garden-back").click()
+        self.page.wait_for_function("Module._gardenState(4) === 0")
+        self.page.evaluate("Module._gardenChange(0, 250)")
+        self.page.wait_for_timeout(250)
+        self.assertEqual(state(0), 250)
+
     def test_new_profile_and_exclusive_tab(self):
         name = self.create_profile()
         saved = self.read_file("users.dat")
