@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+<!-- Original vector illustrations for GOTY+ extension menus. Not extracted game sprites. -->
+<symbol id="sandbox" viewBox="0 0 64 64">
+<path d="M6 37 24 23 58 32 42 48 7 45Z" fill="#492c24" stroke="#211b1c" stroke-width="3" stroke-linejoin="round"/>
+<path d="m6 37 35 8 17-13-33-8Z" fill="#c29854" stroke="#41291b" stroke-width="3"/>
+<path d="m8 39 2 10 31 9V46m1 10 14-13 2-9" fill="#86512d" stroke="#33221b" stroke-width="3" stroke-linejoin="round"/>
+<path d="m21 37 4-19 5 1-4 19" fill="#8d6334" stroke="#3b2b1f" stroke-width="2"/>
+<path d="M25 20q-8-4-6-10 2-5 10-3t9 9q-3 5-13 4Z" fill="#c1b9a6" stroke="#403c38" stroke-width="2.5"/>
+<path d="m35 41 7-7m-26 5 5-3m25-5 4 1" stroke="#f4d27b" stroke-width="2" stroke-linecap="round"/>
+</symbol>
+<symbol id="offline" viewBox="0 0 64 64">
+<path d="M15 7h34l5 7v43H10V14Z" fill="#6d6254" stroke="#2e2925" stroke-width="3" stroke-linejoin="round"/>
+<path d="M18 12h28v19H18Z" fill="#b0b79d" stroke="#3d453a" stroke-width="2"/>
+<path d="M19 40h26v16H19Z" fill="#e5d6ad" stroke="#4f4537" stroke-width="2"/>
+<path d="M35 15h7v13h-7Z" fill="#4c5144"/>
+<path d="m23 45 7 5 11-11" fill="none" stroke="#4c7934" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</symbol>
+<symbol id="backup" viewBox="0 0 64 64">
+<path d="m10 15 22-8 23 9-2 38-22 6-20-8Z" fill="#754b2b" stroke="#32221b" stroke-width="3" stroke-linejoin="round"/>
+<path d="m10 15 22 9 23-8-23-9Z" fill="#c69852" stroke="#3e2a1e" stroke-width="2.5"/>
+<path d="M32 24v35" stroke="#38251d" stroke-width="3"/>
+<path d="m15 23 12 5v23l-12-5Zm22 5 13-5v23l-13 5Z" fill="#b48143" stroke="#52351f" stroke-width="2"/>
+<path d="m25 34 7 3 7-3v13l-7 3-7-3Z" fill="#b6ad82" stroke="#443e2e" stroke-width="2"/>
+<path d="M30 42h4" stroke="#453d2c" stroke-width="3" stroke-linecap="round"/>
+</symbol>
+</svg>
