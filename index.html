@@ -147,6 +147,7 @@
           <div id="grass"></div><span id="progress-text">Carregando…</span>
         </div>
       </div>
+      <button class="pvz-stone" id="sandbox-level-trigger" type="button" aria-haspopup="dialog" hidden>Escolher fase</button>
       <span id="sandbox-indicator" hidden>Sandbox · temporário</span>
       <a class="pvz-stone" id="tools-link" href="tools.html" hidden>Ferramentas</a>
       <button class="pvz-stone" id="garden-trigger" type="button" aria-haspopup="dialog" aria-controls="garden-menu" hidden><img src="{{SPADE}}" alt="">Menu Hack</button>
@@ -172,6 +173,18 @@
         </div>
         <output aria-live="polite"></output>
         <button class="pvz-stone" id="garden-back" autofocus>Voltar ao jogo</button>
+        </div>
+      </dialog>
+      <dialog id="sandbox-level-menu" aria-labelledby="sandbox-level-title">
+        <div class="sandbox-stone-card">
+          <form>
+            <h2 id="sandbox-level-title" class="pvz-title">Escolher fase</h2>
+            <label for="sandbox-level">Adventure</label>
+            <select id="sandbox-level" required></select>
+            <output aria-live="polite"></output>
+            <button class="pvz-stone" type="submit">Jogar</button>
+            <button class="pvz-stone" type="button" data-close>Voltar</button>
+          </form>
         </div>
       </dialog>
   </main>
