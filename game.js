@@ -7,6 +7,7 @@ const splash = document.querySelector("#splash");
 const panel = document.querySelector("#panel");
 const notice = document.querySelector("#notice");
 const retry = document.querySelector("#retry");
+const toolsLink = document.querySelector("#tools-link");
 const bar = document.querySelector("[role=progressbar]");
 const progressText = document.querySelector("#progress-text");
 const expectedBytes = config.pak.size + config.wasm.size;
@@ -158,7 +159,10 @@ async function start() {
   // PvZ-Portable already owns the indexed PAK in its WASM heap after Init.
   // Release the startup copy so it is not kept alongside the decoded textures.
   fs.unlink("/main.pak");
-  if (!failed) removeGarden = installGarden(module, canvas);
+  if (!failed) {
+    removeGarden = installGarden(module, canvas);
+    toolsLink.hidden = false;
+  }
 }
 
 window.onGameExit = async () => {
@@ -171,6 +175,19 @@ window.onGameExit = async () => {
   splash.hidden = false;
   showMessage("Jogo encerrado.", "Jogar novamente");
 };
+toolsLink.addEventListener("click", async event => {
+  event.preventDefault();
+  if (!confirm("Saia da fase pelo menu principal para salvar o progresso antes de abrir as ferramentas. Continuar?")) return;
+  toolsLink.style.pointerEvents = "none";
+  try {
+    if (persistent) await sync(window.Module.FS);
+    location.href = toolsLink.href;
+  } catch (error) {
+    toolsLink.style.pointerEvents = "";
+    notify("Não foi possível gravar o progresso. Tente novamente.");
+    console.warn(error);
+  }
+});
 canvas.addEventListener("contextmenu", event => event.preventDefault());
 // A tap can move focus back to the canvas. Restore the editor during the
 // user gesture so mobile browsers can open or reopen their virtual keyboard.
