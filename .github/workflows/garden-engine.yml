@@ -1,8 +1,8 @@
 name: Compilar motor do Menu Hack
 on:
   push:
-    branches: [motor-menu-hack, goty-plus/motor-fase-2]
-    paths: ['engine/garden.inc', 'scripts/patch_garden_engine.py', '.github/workflows/garden-engine.yml', 'tests/test_browser.py', 'garden.js', 'index.html']
+    branches: [motor-menu-hack, goty-plus/motor-fase-2, goty-plus/sandbox-unlocked]
+    paths: ['engine/garden.inc', 'scripts/patch_garden_engine.py', '.github/workflows/garden-engine.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -35,7 +35,7 @@ jobs:
           name: pvz-garden
           path: vendor/pvz-garden.zip
       - name: Registrar o motor no ramo de compilação
-        if: github.ref == 'refs/heads/motor-menu-hack' || github.ref == 'refs/heads/goty-plus/motor-fase-2'
+        if: github.ref == 'refs/heads/motor-menu-hack' || github.ref == 'refs/heads/goty-plus/motor-fase-2' || github.ref == 'refs/heads/goty-plus/sandbox-unlocked'
         run: |
           sha256sum vendor/pvz-garden.zip | cut -d' ' -f1 > vendor/pvz-garden.sha256
           git config user.name 'github-actions[bot]'
