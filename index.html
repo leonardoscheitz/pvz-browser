@@ -96,6 +96,34 @@
       .garden-controls input[type=number] { width: 4.75em; }
       .garden-actions { grid-template-columns: 1fr 1fr; }
     }
+
+    /* Size the controls against the actual visual viewport, including the
+       space left when a mobile keyboard is open. */
+    #garden-menu { container-type: size; }
+    .garden-card { width: min(420px, 95%); max-height: 96%; }
+    .garden-controls { overflow-x: hidden; overscroll-behavior: contain; }
+    .garden-row > input[type=number] { min-width: 0; flex: 0 1 5.35em; }
+    .garden-row > button { flex-shrink: 0; }
+    .garden-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #garden-menu .garden-actions button { white-space: normal; overflow-wrap: anywhere; }
+    @container (max-width: 360px) {
+      .garden-controls { inset-inline: 12%; }
+      .garden-row { gap: .2em; }
+    }
+    @container (min-width: 480px) and (max-height: 540px) {
+      .garden-card { width: min(94%, 720px); height: 96%; }
+      .garden-controls { inset: 22% 13% 24%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-content: start; align-items: center; gap: .3em .8em; }
+      .garden-controls h2, .garden-actions { grid-column: 1 / -1; }
+      .garden-row { gap: .2em; }
+      .garden-controls input[type=number] { width: 4.75em; flex-basis: 4.75em; }
+    }
+    @container (max-height: 250px) {
+      .garden-card { height: 96%; }
+      .garden-controls { inset: 10% 12% 30%; }
+      #garden-menu output { top: 71%; }
+      #garden-back { top: auto; bottom: 4%; height: 16%; }
+    }
   </style>
 </head>
 <body>
