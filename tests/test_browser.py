@@ -198,6 +198,28 @@ class WebGame(unittest.TestCase):
         finally:
             self.context.set_offline(False)
 
+    def test_workshop_visual_assets(self):
+        if os.environ.get("PVZ_BROWSER", "chromium") != "chromium":
+            self.skipTest("Visual kit smoke test on Chromium")
+        self.page.goto(self.url + "tools.html")
+        self.assertTrue(self.page.locator(".pvz-logo").is_visible())
+        self.assertEqual(self.page.locator(".pvz-panel-icon").count(), 3)
+        self.assertTrue(self.page.locator("#save-export").is_visible())
+        self.assertTrue(self.page.locator("#save-import").is_disabled())
+        self.assertTrue(self.page.evaluate("""async () => {
+            const style = getComputedStyle(document.querySelector("#save-export"));
+            const match = style.backgroundImage.match(/url\\(["']?(.*?)["']?\\)/);
+            if (!match) return false;
+            const img = new Image();
+            img.src = match[1];
+            try { await img.decode(); } catch { return false; }
+            return img.naturalWidth > 0 && (await fetch("ui-icons.svg")).ok;
+        }"""))
+        for width, height in [(320,568),(390,844),(844,390),(1280,800)]:
+            self.page.set_viewport_size({"width": width, "height": height})
+            self.assertTrue(self.page.evaluate("document.documentElement.scrollWidth <= innerWidth"))
+            self.assertGreaterEqual(self.page.locator("#save-export").bounding_box()["height"], 44)
+
     def test_sandbox_never_mounts_campaign(self):
         if os.environ.get("PVZ_BROWSER", "chromium") != "chromium":
             self.skipTest("Sandbox isolation covered on Chromium")
