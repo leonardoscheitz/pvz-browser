@@ -1,6 +1,6 @@
 # Validação do PvZ Browser
 
-Testes de 24 de novembro de 2026 com o motor PvZ-Portable `2493154` e os recursos GOTY do repositório. Todos os perfis usados nesta validação eram descartáveis.
+Testes da [versão publicada antes do Menu Hack](https://github.com/leonardoscheitz/pvz-browser/commit/0612962ff14d1939c825049b238be1587fd4a67e), realizados em 24 de novembro de 2026 com o motor PvZ-Portable `2493154` e os recursos GOTY do repositório. Todos os perfis usados nesta validação eram descartáveis.
 
 ## Jogo e progresso
 

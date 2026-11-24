@@ -11,8 +11,8 @@ import tempfile
 from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
-ENGINE = ROOT / "vendor" / "pvz-portable-2493154.zip"
-ENGINE_SHA256 = "3a215c83f7544c7967253fe282ab86a5872f99daea7303ce5871f09cdb78d9e8"
+ENGINE = ROOT / "vendor" / "pvz-garden.zip"
+ENGINE_SHA256 = (ENGINE.parent / "pvz-garden.sha256").read_text().strip()
 RESOURCE_DIRS = {"images", "data", "particles", "reanim", "sounds", "compiled"}
 PAK_PART_BYTES = 2 * 1024 * 1024
 XOR = bytes(value ^ 0xF7 for value in range(256))
@@ -79,6 +79,8 @@ def build(site):
                 properties.append({**entry, "path": path})
         skin = {
             "BACKGROUND": "titlescreen.jpg", "LOGO": "PvZ_Logo.jpg", "ALPHA": "PvZ_Logo_.png",
+            "GRAVE": "options_menuback.jpg", "GRAVE_MASK": "options_menuback_.png",
+            "STONE_BUTTON": "options_backtogamebutton0.png", "SPADE": "Shovel.png",
             "DIRT": "LoadBar_dirt.png", "GRASS": "LoadBar_grass.png",
         }
         art = {key: publish_file(site, "title-" + key.lower(), Path(name).suffix[1:],
@@ -87,6 +89,8 @@ def build(site):
     manifest = {"glue": glue, "wasm": wasm, "pak": pak, "properties": properties}
     storage = publish_file(site, "saves", "js", (ROOT / "saves.js").read_bytes())
     script = (ROOT / "game.js").read_text(encoding="utf-8").replace("./saves.js", "./" + Path(storage["url"]).name)
+    garden = publish_file(site, "garden", "js", (ROOT / "garden.js").read_bytes())
+    script = script.replace("./garden.js", "./" + Path(garden["url"]).name)
     game = publish_file(site, "game", "js", script.encode("utf-8"))
     page = (ROOT / "index.html").read_text(encoding="utf-8")
     replacements = {**art, "CONFIG": json.dumps(manifest, separators=(",", ":")), "SCRIPT": game["url"]}

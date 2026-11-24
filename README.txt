@@ -4,6 +4,11 @@ Jogar: https://leonardoscheitz.github.io/pvz-browser/
 O endereço abre diretamente o jogo. Clique em “Click to Start”, crie o perfil e
 entre em Adventure. O menu Options do jogo controla a música, os efeitos e a
 tela cheia. Use o mouse ou toque para escolher sementes, plantar e recolher sol.
+Durante uma fase, o botão Menu Hack aparece no canto inferior esquerdo.
+Abrir o menu pausa a partida. Você pode ajustar sol e moedas, alternar o plantio
+grátis, mudar a velocidade, curar plantas e remover os zumbis presentes.
+O saldo de moedas é salvo no perfil. Use Voltar ao jogo para continuar.
+
 O jogo usa os textos em inglês presentes na cópia GOTY deste repositório.
 
 MOTOR E RECURSOS
@@ -39,7 +44,7 @@ Com Python 3.9 ou superior, na raiz do repositório:
   python -m http.server 8765 --bind 127.0.0.1 --directory dist
 Abra http://127.0.0.1:8765/. No Windows, Servir.ps1 prepara e serve o site.
 
-O ZIP oficial do motor está versionado em vendor. O build verifica seu SHA-256
+O ZIP do motor com o Menu Hack está em vendor/pvz-garden.zip. O build verifica seu SHA-256
 e pode ser executado offline apenas com a biblioteca padrão do Python.
 
 PUBLICAÇÃO
@@ -53,11 +58,12 @@ Veja os resultados de jogo, saves e desempenho em VALIDACAO.md no repositório.
 CRÉDITOS
 Plants vs. Zombies, seus gráficos, áudios e textos pertencem a PopCap Games /
 Electronic Arts. O motor comunitário é distribuído sob LGPL-3.0-or-later.
-A integração usa os binários publicados sem alterar o código do motor.
+O arquivo engine/garden.inc acrescenta os controles do menu ao motor LGPL.
+O workflow .github/workflows/garden-engine.yml reproduz a compilação.
 Fonte correspondente e instruções de compilação:
 https://github.com/wszqkzqk/PvZ-Portable/tree/2493154028b8542a58bc2caed14fda83b1b7c57e
-Build oficial: https://github.com/wszqkzqk/PvZ-Portable/actions/runs/45099544349
-SHA-256 do ZIP: 3a215c83f7544c7967253fe282ab86a5872f99daea7303ce5871f09cdb78d9e8
+Build original de referência: https://github.com/wszqkzqk/PvZ-Portable/actions/runs/45099544349
+SHA-256 do ZIP original: 3a215c83f7544c7967253fe282ab86a5872f99daea7303ce5871f09cdb78d9e8
 Licenças: licenses/PvZ-Portable-LGPL.txt, licenses/GPL.txt,
 licenses/PopCap-Framework.txt e licenses/fcaseopen.txt.
 This product includes portions of the PopCap Games Framework, © 2005-2009

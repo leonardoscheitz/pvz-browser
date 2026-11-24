@@ -71,7 +71,7 @@ class WebGame(unittest.TestCase):
     def read_file(self, name):
         return bytes(self.page.evaluate("p => Array.from(Module.FS.readFile(p))", MOUNT + name))
 
-    def test_new_profile_and_exclusive_tab(self):
+    def create_profile(self):
         self.page.goto(self.url)
         self.wait_engine()
         # The title button only becomes active after the game's own resource loading and intro.
@@ -91,6 +91,56 @@ class WebGame(unittest.TestCase):
         self.page.wait_for_timeout(200)
         self.choose(280, 395)
         self.page.wait_for_function("Module.FS.analyzePath('/saves/userdata/users.dat').exists")
+        return name
+
+    def test_garden_menu_on_live_board(self):
+        self.create_profile()
+        trigger = self.page.locator("#garden-trigger")
+        self.assertTrue(trigger.is_hidden())
+        end = time.monotonic() + 60
+        while trigger.is_hidden():
+            self.assertLess(time.monotonic(), end, "Adventure did not reach the lawn")
+            self.choose(545, 133)
+            self.page.wait_for_timeout(700)
+
+        def activate(locator):
+            if self.touch:
+                locator.tap()
+            else:
+                locator.click()
+
+        def state(field):
+            return self.page.evaluate("field => Module._gardenState(field)", field)
+
+        activate(trigger)
+        self.assertEqual(state(4), 1)
+        sun = self.page.locator("#garden-sun")
+        sun.fill("750")
+        activate(sun.locator("..").get_by_role("button"))
+        self.assertEqual(state(0), 750)
+        coins = self.page.locator("#garden-coins")
+        coins.fill("5050")
+        activate(coins.locator("..").get_by_role("button"))
+        self.assertEqual(state(1), 5050)
+        self.assertEqual(struct.unpack_from("<I", self.read_file("user1.dat"), 8)[0], 505)
+        activate(self.page.locator("#garden-free"))
+        self.assertEqual(state(2), 1)
+        self.page.locator("#garden-speed").select_option("2")
+        self.assertEqual(state(3), 2)
+        activate(self.page.locator("#garden-heal"))
+        activate(self.page.locator("#garden-clear"))
+        activate(self.page.locator("#garden-back"))
+        self.page.wait_for_function("Module._gardenState(4) === 0")
+        self.choose(118, 40)
+        self.choose(88, 330)
+        self.assertEqual(state(0), 750)
+        activate(trigger)
+        self.assertEqual(sun.input_value(), "750")
+        self.page.keyboard.press("Escape")
+        self.page.wait_for_function("!document.querySelector('#garden-menu').open && Module._gardenState(4) === 0")
+
+    def test_new_profile_and_exclusive_tab(self):
+        name = self.create_profile()
         saved = self.read_file("users.dat")
         self.assertEqual(int.from_bytes(saved[6:8], "little"), len(name))
         self.assertEqual(saved[8:8 + len(name)], name)

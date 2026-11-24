@@ -1,3 +1,4 @@
+import { installGarden } from "./garden.js";
 import { mountSaves, reserveProfile, sync } from "./saves.js";
 
 const config = JSON.parse(document.querySelector("#config").textContent);
@@ -14,6 +15,7 @@ let lastPercent = -1;
 let persistent = false;
 let failed = false;
 let releaseProfile;
+let removeGarden;
 
 function showMessage(text, action = "Tentar novamente") {
   document.querySelector("#message").textContent = text;
@@ -30,6 +32,7 @@ function notify(text) {
 function fail(error) {
   if (failed) return;
   failed = true;
+  removeGarden?.();
   if (!persistent) releaseProfile?.();
   console.error(error);
   showMessage(error.message || "O jogo não conseguiu iniciar.");
@@ -155,9 +158,11 @@ async function start() {
   // PvZ-Portable already owns the indexed PAK in its WASM heap after Init.
   // Release the startup copy so it is not kept alongside the decoded textures.
   fs.unlink("/main.pak");
+  if (!failed) removeGarden = installGarden(module, canvas);
 }
 
 window.onGameExit = async () => {
+  removeGarden?.();
   if (persistent) {
     try { await sync(window.Module.FS); }
     catch (error) { notify("O navegador não conseguiu gravar o último progresso."); console.warn(error); }

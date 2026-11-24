@@ -38,6 +38,34 @@
       max-width: 94%; padding: .45rem .7rem; border-radius: .3rem; background: #262114f2; font-size: .85rem; }
     #notice button { margin-left: .5rem; padding: .1rem .45rem; }
     .sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    #garden-trigger, #garden-menu button { font-family: Georgia, serif; font-weight: 800; }
+    #garden-trigger { position: absolute; bottom: 1%; left: 1%; background: url('{{STONE_BUTTON}}') center / 100% 100%;
+      padding: .48em .85em .58em .45em; border: 0; color: #def798; text-shadow: 1px 2px 2px #181321;
+      display: flex; align-items: center; gap: .15em; font-size: clamp(12px,1.85cqw,19px); }
+    #garden-trigger img { width: 1.4em; height: 1.4em; }
+    #garden-menu { position: fixed; inset: 0; margin: auto; width: min(96vw, 420px, 84dvh);
+      aspect-ratio: 423/498; max-height: 98dvh; padding: 0; border: 0; background: transparent; color: #fff1cb;
+      font: bold clamp(13px,min(3.8vw,3.5dvh),18px)/1.2 Georgia, serif; overflow: visible; }
+    #garden-menu::backdrop { background: #08070bb8; }
+    #garden-menu::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: url('{{GRAVE}}') center / 100% 100%; mask: url('{{GRAVE_MASK}}') center / 100% 100%; mask-mode: luminance; }
+    .garden-controls { position: absolute; inset: 24% 17% 24%; overflow-y: auto; scrollbar-width: thin;
+      display: flex; flex-direction: column; gap: .35em; padding: 2px 3px 6px; }
+    .garden-controls h2 { color: #ffe89a; text-align: center; font-size: 1.35em; margin: 0 0 .1em; text-shadow: 1px 2px #201822; }
+    .garden-row { margin: 0; display: flex; gap: .35em; align-items: center; justify-content: space-between; min-height: 1.7em; }
+    .garden-row label { margin-right: auto; }
+    .garden-controls input[type=number], .garden-controls select { font: inherit; color: #fff2bd; background: #292735;
+      border: 1px solid #948c96; border-radius: 3px; padding: .15em; }
+    .garden-controls input[type=number] { width: 5.35em; }
+    .garden-controls input[type=checkbox] { accent-color: #a4cd65; width: 1.35em; height: 1.35em; }
+    #garden-menu button { font-size: inherit; }
+    .garden-controls button { padding: .25em .4em; background: #494954; border-color: #797580; color: #d5eca6; }
+    .garden-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .4em; }
+    .garden-controls output { font: .8em/1.1 system-ui, sans-serif; text-align: center; color: #e7d9bd; }
+    #garden-back { position: absolute; left: 12%; right: 12%; top: 81%; height: 12%; background: url('{{STONE_BUTTON}}') center / 100% 100%;
+      border: 0; color: #c9ef83; text-shadow: 1px 2px #24202b; }
+    #garden-back:focus-visible { outline: 2px solid #ffdf91; outline-offset: -5px; }
+    #garden-menu button:hover, #garden-trigger:hover { filter: brightness(1.2); }
   </style>
 </head>
 <body>
@@ -52,6 +80,19 @@
           <div id="grass"></div><span id="progress-text">Carregando…</span>
         </div>
       </div>
+      <button id="garden-trigger" type="button" aria-haspopup="dialog" aria-controls="garden-menu" hidden><img src="{{SPADE}}" alt="">Menu Hack</button>
+      <dialog id="garden-menu" aria-labelledby="garden-title">
+        <div class="garden-controls">
+          <h2 id="garden-title">Menu Hack</h2>
+          <form class="garden-row"><label for="garden-sun">Sol</label><input id="garden-sun" type="number" min="0" max="9990" required inputmode="numeric"><button>Aplicar</button></form>
+          <form class="garden-row"><label for="garden-coins">Moedas</label><input id="garden-coins" type="number" min="0" max="999990" step="10" required inputmode="numeric"><button>Aplicar</button></form>
+          <label class="garden-row">Plantio grátis<input type="checkbox" id="garden-free"></label>
+          <label class="garden-row">Velocidade<select id="garden-speed"><option value="0">Lenta</option><option value="1">Normal</option><option value="2">Rápida</option></select></label>
+          <div class="garden-actions"><button id="garden-heal">Curar plantas</button><button id="garden-clear">Limpar zumbis</button></div>
+          <output aria-live="polite"></output>
+        </div>
+        <button id="garden-back" autofocus>Voltar ao jogo</button>
+      </dialog>
       <div id="panel" hidden>
         <div class="dialog"><p id="message" role="status"></p><button id="retry" type="button">Tentar novamente</button></div>
       </div>
