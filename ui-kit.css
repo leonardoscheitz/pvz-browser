@@ -1,0 +1,65 @@
+/* Shared GOTY+ visual language. Image URLs are resolved from the game's archive at build time. */
+:root {
+  --pvz-stone: url('{{STONE_BUTTON}}');
+  --pvz-grave: url('{{GRAVE}}');
+  --pvz-grave-mask: url('{{GRAVE_MASK}}');
+  --pvz-yard: url('{{BACKGROUND}}');
+  --pvz-logo: url('{{LOGO}}');
+  --pvz-logo-mask: url('{{ALPHA}}');
+  --pvz-ink: #221c25;
+  --pvz-gold: #ffe09a;
+  --pvz-leaf: #d2ec92;
+  --pvz-display: "Trebuchet MS", Georgia, serif;
+  --pvz-reading: system-ui, sans-serif;
+}
+.pvz-stone, #garden-menu .pvz-stone {
+  display: inline-flex; align-items: center; justify-content: center; gap: .35em;
+  min-height: 44px; padding: .58em 1.3em .7em;
+  background: var(--pvz-stone) center / 100% 100% no-repeat;
+  border: 0; border-radius: 0; color: var(--pvz-leaf);
+  font-family: var(--pvz-display); font-weight: 900;
+  text-decoration: none; text-align: center; text-shadow: 1px 2px 2px #17151e;
+  cursor: pointer; touch-action: manipulation;
+  transition: filter 100ms ease, transform 100ms ease;
+}
+.pvz-stone:active, #garden-menu .pvz-stone:active { transform: translateY(1px); filter: brightness(.82); }
+.pvz-stone:disabled, .pvz-stone[aria-disabled="true"] { filter: saturate(.25) brightness(.72); cursor: not-allowed; }
+.pvz-stone[aria-pressed="true"] { color: #fff2ab; filter: brightness(1.15); }
+@media (hover:hover) and (pointer:fine) { .pvz-stone:not(:disabled):hover { filter: brightness(1.18); } }
+.pvz-stone:focus-visible, .pvz-panel input:focus-visible, .pvz-panel select:focus-visible {
+  outline: 3px solid #f7db88; outline-offset: 2px;
+}
+.pvz-title { font-family: var(--pvz-display); font-weight: 900; color: var(--pvz-gold); text-shadow: 1px 2px 2px #1e171d; }
+.pvz-panel {
+  position: relative; isolation: isolate; padding: 24px;
+  background: linear-gradient(#292a2df0, #25232af5), var(--pvz-grave) center / 180% 180%;
+  border: 4px solid #7b7976; border-radius: 13px 11px 16px 10px;
+  box-shadow: inset 0 0 0 2px #302f34, inset 0 0 0 5px #56545b, 0 6px 0 #111715aa, 0 10px 20px #0006;
+  color: #f2e9cc;
+}
+.pvz-panel h2 { margin: 0; }
+.pvz-panel-icon { width: 38px; height: 38px; flex: 0 0 38px; filter: drop-shadow(1px 2px 1px #17151d); }
+.pvz-panel-heading { display: flex; align-items: center; gap: 10px; margin-bottom: .6rem; }
+.pvz-panel p { margin: .6em 0; }
+.pvz-panel small { color: #dbd3bc; }
+.pvz-panel input[type="file"] { max-width: 100%; font: inherit; color: #e8dfbf; }
+.pvz-logo { width: min(360px, 80vw); aspect-ratio: 4.525; background: var(--pvz-logo) center / 100% 100% no-repeat;
+  mask: var(--pvz-logo-mask) center / 100% 100% no-repeat; mask-mode: luminance; }
+.pvz-workshop { min-height: 100vh; margin: 0; color: #f2e9cc; font: 16px/1.5 var(--pvz-reading);
+  background: #171c18; }
+.pvz-workshop::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(#10170eb0, #101611f5), var(--pvz-yard) center / cover no-repeat; }
+.pvz-workshop main { width: min(960px, 100%); margin: auto;
+  padding: 20px max(16px, env(safe-area-inset-right)) 36px max(16px, env(safe-area-inset-left)); }
+.pvz-workshop header { display: grid; justify-items: center; gap: 8px; text-align: center; margin: 10px 0 24px; }
+.pvz-workshop h1 { margin: 0; font-size: clamp(25px,5vw,36px); }
+.pvz-workshop h2 { font-size: 23px; line-height: 1.2; }
+.pvz-workshop .pvz-stone { font-size: 16px; line-height: 1.25; margin: 4px 0; max-width: 100%; overflow-wrap: anywhere; }
+.pvz-workshop .pvz-stone.primary { min-height: 54px; font-size: 19px; }
+.pvz-workshop .pvz-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+.pvz-workshop .pvz-wide { grid-column: 1/-1; }
+.pvz-workshop [role=status] { color: #e0d2af; font-size: .9rem; }
+.pvz-workshop [hidden] { display: none !important; }
+@media (max-width: 660px) { .pvz-workshop .pvz-grid { grid-template-columns: minmax(0,1fr); }
+  .pvz-panel { padding: 18px; } }
+@media (prefers-reduced-motion: reduce) { .pvz-stone { transition: none; } }
