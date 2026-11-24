@@ -3,7 +3,7 @@
 ## Recursos
 - A compilação reutiliza as imagens já extraídas de modern/pvz-goty.zip: titlescreen.jpg, PvZ_Logo.jpg e máscara, options_menuback.jpg e máscara e options_backtogamebutton0.png.
 - ui-kit.css define os componentes .pvz-stone, .pvz-panel, .pvz-title, .pvz-panel-heading e .pvz-logo. Não recriar os botões a cada tela.
-- ui-icons.svg contém ilustrações vetoriais novas e editáveis (Sandbox, offline, backup). Não são sprites oficiais.
+- As molduras são formadas pelas nove peças de diálogo do jogo (cantos, bordas e centro). Ícones usam os sprites originais de pá, almanaque e troféu; o botão pressionado usa o sprite nativo options_backtogamebutton2. A compilação resolve nomes ignorando caixa e separadores e falha se faltar alguma imagem obrigatória. Não usar SVG como substituto da arte de menus.
 - Os estados normal, hover, pressionado, desabilitado, foco e aria-pressed são tratados pelo kit. Respeitar redução de movimento.
 - Textos funcionais permanecem HTML e traduzíveis; não incorporá-los em imagens.
 
@@ -14,4 +14,4 @@ O canvas mantém as fontes originais do motor. O kit web usa provisoriamente Tre
 Usar os componentes compartilhados e, onde possível, texturas originais com suas máscaras. Novas ilustrações devem ser pequenas, com contorno escuro, volumes pintados e paleta compatível; salvar a fonte editável. Preservar os IDs e a acessibilidade dos controles e não misturar mudanças visuais com mudanças de saves.
 
 ## Validação
-Executar scripts/build.py e tests/test_browser.py. O teste test_workshop_visual_assets verifica carregamento da imagem de botão, presença de ícones e ausência de overflow horizontal em quatro tamanhos de viewport. Isso não substitui revisão visual real em PC e iPhone.
+Executar scripts/build.py e tests/test_browser.py. O teste test_workshop_visual_assets verifica decodificação de todos os sprites raster das molduras, ícones e botão, além da ausência de overflow horizontal em quatro tamanhos de viewport. PVZ_UI_SCREENSHOTS permite registrar capturas reais em PNG. Isso não substitui revisão visual real em PC e iPhone.
