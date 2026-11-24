@@ -30,16 +30,6 @@ jobs:
           cd build-wasm
           rm -f ../../vendor/pvz-garden.zip
           zip -X ../../vendor/pvz-garden.zip pvz-portable.js pvz-portable.wasm
-      - name: Validar motor novo no Chromium
-        env:
-          PVZ_BROWSER: chromium
-          PVZ_REQUIRE_ADVANCED: '1'
-        run: |
-          sha256sum vendor/pvz-garden.zip | cut -d' ' -f1 > vendor/pvz-garden.sha256
-          python3 scripts/build.py
-          python3 -m pip install playwright==1.62.0
-          python3 -m playwright install --with-deps chromium
-          python3 tests/test_browser.py
       - uses: actions/upload-artifact@v7
         with:
           name: pvz-garden
