@@ -61,7 +61,9 @@
     #garden-menu button { font-size: inherit; }
     .garden-controls button { padding: .25em .4em; background: #494954; border-color: #797580; color: #d5eca6; }
     .garden-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .4em; }
-    .garden-controls output { font: .8em/1.1 system-ui, sans-serif; text-align: center; color: #e7d9bd; }
+    #garden-menu .garden-actions button { font-size: .87em; padding: .4em .12em; white-space: nowrap; }
+    #garden-menu output { position: absolute; top: 76%; left: 8%; right: 8%; font: bold .8em/1.2 system-ui, sans-serif;
+      text-align: center; color: #fff2cd; text-shadow: 1px 1px 2px #181421; }
     #garden-back { position: absolute; left: 12%; right: 12%; top: 81%; height: 12%; background: url('{{STONE_BUTTON}}') center / 100% 100%;
       border: 0; color: #c9ef83; text-shadow: 1px 2px #24202b; }
     #garden-back:focus-visible { outline: 2px solid #ffdf91; outline-offset: -5px; }
@@ -89,8 +91,8 @@
           <label class="garden-row">Plantio grátis<input type="checkbox" id="garden-free"></label>
           <label class="garden-row">Velocidade<select id="garden-speed"><option value="0">Lenta</option><option value="1">Normal</option><option value="2">Rápida</option></select></label>
           <div class="garden-actions"><button id="garden-heal">Curar plantas</button><button id="garden-clear">Limpar zumbis</button></div>
-          <output aria-live="polite"></output>
         </div>
+        <output aria-live="polite"></output>
         <button id="garden-back" autofocus>Voltar ao jogo</button>
       </dialog>
       <div id="panel" hidden>
