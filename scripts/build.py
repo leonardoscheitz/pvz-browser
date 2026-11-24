@@ -66,7 +66,7 @@ def pack_resources(site, archive):
 
 
 def publish_web_support(site):
-    for filename in ("tools.html", "pwa.js", "save-tools.js", "icon.svg"):
+    for filename in ("tools.html", "pwa.js", "save-tools.js", "icon.svg", "ui-icons.svg"):
         shutil.copyfile(ROOT / filename, site / filename)
     manifest = {
         "id": "./", "name": "Plants vs. Zombies GOTY Browser", "short_name": "PvZ GOTY",
@@ -75,7 +75,7 @@ def publish_web_support(site):
         "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}],
     }
     (site / "manifest.webmanifest").write_text(json.dumps(manifest, ensure_ascii=False), encoding="utf-8")
-    files = sorted(["index.html", "tools.html", "pwa.js", "save-tools.js", "icon.svg", "manifest.webmanifest"] +
+    files = sorted(["index.html", "tools.html", "pwa.js", "save-tools.js", "icon.svg", "ui-icons.svg", "ui-kit.css", "manifest.webmanifest"] +
                    [p.relative_to(site).as_posix() for p in (site / "assets").iterdir()])
     worker = (ROOT / "pwa-worker.js").read_text(encoding="utf-8")
     digest = hashlib.sha256(worker.encode("utf-8"))
@@ -108,6 +108,13 @@ def build(site):
         art = {key: publish_file(site, "title-" + key.lower(), Path(name).suffix[1:],
                                  archive.read("images/" + name))["url"] for key, name in skin.items()}
 
+    # Reuse the already-published original image assets; no duplicate payload.
+    kit = (ROOT / "ui-kit.css").read_text(encoding="utf-8")
+    for key, value in art.items():
+        kit = kit.replace("{{" + key + "}}", value)
+    if "{{" in kit:
+        raise ValueError("Unresolved UI kit asset reference")
+    (site / "ui-kit.css").write_text(kit, encoding="utf-8")
     manifest = {"glue": glue, "wasm": wasm, "pak": pak, "properties": properties}
     storage = publish_file(site, "saves", "js", (ROOT / "saves.js").read_bytes())
     script = (ROOT / "game.js").read_text(encoding="utf-8").replace("./saves.js", "./" + Path(storage["url"]).name)
