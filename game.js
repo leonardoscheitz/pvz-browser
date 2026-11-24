@@ -1,4 +1,4 @@
-import { mountSaves, sync } from "./saves.js";
+import { mountSaves, reserveProfile, sync } from "./saves.js";
 
 const config = JSON.parse(document.querySelector("#config").textContent);
 const canvas = document.querySelector("#canvas");
@@ -118,6 +118,7 @@ async function start() {
   if (!window.WebAssembly || !window.DecompressionStream || !WebAssembly.instantiateStreaming) {
     throw new Error("Abra o jogo em uma versão atual do Chrome, Edge, Firefox ou Safari.");
   }
+  await reserveProfile();
   const [module, resources] = await Promise.all([initializeEngine(), gameAssets()]);
   const fs = module.FS;
   fs.writeFile("/main.pak", resources.pak, { canOwn: true });
@@ -145,6 +146,13 @@ window.onGameExit = async () => {
   showMessage("Jogo encerrado.", "Jogar novamente");
 };
 canvas.addEventListener("contextmenu", event => event.preventDefault());
+// A tap can move focus back to the canvas. Restore the editor during the
+// user gesture so mobile browsers can open or reopen their virtual keyboard.
+canvas.addEventListener("pointerup", () => {
+  if (window.Module?.wasmSoftKeyboardState?.active) {
+    document.querySelector("#pvz-soft-keyboard").focus({ preventScroll: true });
+  }
+});
 canvas.addEventListener("webglcontextcreationerror", () => fail(new Error("O navegador não conseguiu abrir o WebGL. Ative a aceleração gráfica e tente novamente.")));
 canvas.addEventListener("webglcontextlost", () => fail(new Error("A conexão com a placa de vídeo foi interrompida. Reabra o jogo.")));
 notice.querySelector("button").addEventListener("click", () => { notice.hidden = true; canvas.focus(); });

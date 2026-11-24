@@ -17,6 +17,8 @@
     #frame { position: relative; width: min(100vw, 133.333333vh); width: min(100vw, 133.333333dvh); aspect-ratio: 4/3; container-type: inline-size; }
     #canvas, #splash { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
     #canvas { display: block; outline: 0; touch-action: none; }
+    #pvz-soft-keyboard { position: absolute; top: 0; left: 0; width: 1px; height: 1px;
+      padding: 0; border: 0; opacity: 0; resize: none; pointer-events: none; font-size: 16px; }
     #splash { background: url('{{BACKGROUND}}') center / 100% 100% no-repeat; }
     .logo { position: absolute; left: 6.25%; top: 2.5%; width: 87.5%; height: 19.333%;
       background: url('{{LOGO}}') center / 100% 100% no-repeat;
@@ -42,6 +44,8 @@
   <main id="canvas-container" aria-label="Plants vs. Zombies">
     <div id="frame">
       <canvas id="canvas" width="800" height="600" tabindex="0" aria-label="Plants vs. Zombies GOTY">Seu navegador precisa oferecer suporte a canvas.</canvas>
+      <textarea id="pvz-soft-keyboard" tabindex="-1" aria-label="Nome do jogador" rows="1"
+        autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done"></textarea>
       <div id="splash">
         <span class="logo" aria-hidden="true"></span>
         <div class="track" role="progressbar" aria-label="Carregando o jogo" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">

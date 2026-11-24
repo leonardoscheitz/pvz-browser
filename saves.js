@@ -13,38 +13,55 @@ export function sync(fs, populate = false) {
   return new Promise((resolve, reject) => fs.syncfs(populate, error => error ? reject(error) : resolve()));
 }
 
+async function readLegacyStore(name) {
+  // Opening without a version works even on browsers without databases().
+  // Abort creation when this installation of BoxedWine never existed.
+  const request = indexedDB.open(name);
+  let missing = false;
+  request.onupgradeneeded = () => { missing = true; request.transaction.abort(); };
+  let db;
+  try {
+    db = await result(request);
+  } catch (error) {
+    if (missing && error.name === "AbortError") return [];
+    throw error;
+  }
+  try {
+    if (!db.objectStoreNames.contains("FILE_DATA")) return [];
+    const files = () => db.transaction("FILE_DATA").objectStore("FILE_DATA");
+    const keys = (await result(files().getAllKeys())).filter(key =>
+      typeof key === "string" && /\/userdata\/user(?:s|\d+)\.dat$/i.test(key));
+    if (!keys.length) return [];
+    // Queue all reads on a fresh transaction before yielding. Never load Wine's other files.
+    const store = files();
+    return await Promise.all(keys.map(async key => [key, await result(store.get(key))]));
+  } finally {
+    db.close();
+  }
+}
+
 async function oldProfiles() {
-  if (!indexedDB.databases) return [];
-  const existing = new Set((await indexedDB.databases()).map(db => db.name));
-  let newest = -1;
-  let profile = [];
-  for (const name of legacyStores.filter(name => existing.has(name))) {
-    const db = await result(indexedDB.open(name));
-    try {
-      if (!db.objectStoreNames.contains("FILE_DATA")) continue;
-      const store = db.transaction("FILE_DATA").objectStore("FILE_DATA");
-      const keys = (await result(store.getAllKeys())).filter(key =>
-        typeof key === "string" && /\/userdata\/user(?:s|\d+)\.dat$/i.test(key));
-      // Read only profile records. The same old database may also contain an entire Wine prefix.
-      const records = await Promise.all(keys.map(async key => [key, await result(store.get(key))]));
-      for (const [key, value] of records) {
-        if (!/\/users\.dat$/i.test(key) || !value.contents?.length) continue;
-        const date = Number(value.timestamp);
-        if (date <= newest) continue;
-        const folder = key.slice(0, key.lastIndexOf("/") + 1);
-        profile = records.filter(([path, item]) => path.startsWith(folder) && item.contents?.length)
-          .map(([path, item]) => [path.slice(folder.length).toLowerCase(), item.contents]);
-        newest = date;
-      }
-    } finally {
-      db.close();
+  let latest;
+  for (const name of legacyStores) {
+    const folders = new Map();
+    for (const [path, file] of await readLegacyStore(name)) {
+      if (!file?.contents?.length) continue;
+      const slash = path.lastIndexOf("/");
+      const folder = path.slice(0, slash).toLowerCase();
+      if (!folders.has(folder)) folders.set(folder, { files: new Map(), time: 0 });
+      const group = folders.get(folder);
+      group.files.set(path.slice(slash + 1).toLowerCase(), file.contents);
+      group.time = Math.max(group.time, Number(file.timestamp) || 0);
+    }
+    for (const group of folders.values()) {
+      if (group.files.has("users.dat") && (!latest || group.time > latest.time)) latest = group;
     }
   }
-  return profile;
+  return latest?.files ?? new Map();
 }
 
 // An IDBFS instance syncs a whole directory snapshot. Two writers could drop each other's progress.
-async function reserveProfile() {
+export async function reserveProfile() {
   if (!navigator.locks) return;
   await new Promise((resolve, reject) => {
     navigator.locks.request("pvz-browser-goty-save", { ifAvailable: true }, lock => {
@@ -56,7 +73,6 @@ async function reserveProfile() {
 }
 
 export async function mountSaves(module, notify) {
-  await reserveProfile();
   const fs = module.FS;
   fs.mkdir(mount);
   fs.symlink(mount, "/saves");
@@ -75,7 +91,7 @@ export async function mountSaves(module, notify) {
   if (!fs.analyzePath("/saves/userdata/users.dat").exists) {
     try {
       const files = await oldProfiles();
-      if (files.length) {
+      if (files.size) {
         fs.mkdirTree("/saves/userdata");
         for (const [name, bytes] of files) fs.writeFile("/saves/userdata/" + name, bytes);
         await sync(fs);
