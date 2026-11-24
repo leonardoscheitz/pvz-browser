@@ -67,7 +67,24 @@
     #garden-back { position: absolute; left: 12%; right: 12%; top: 81%; height: 12%; background: url('{{STONE_BUTTON}}') center / 100% 100%;
       border: 0; color: #c9ef83; text-shadow: 1px 2px #24202b; }
     #garden-back:focus-visible { outline: 2px solid #ffdf91; outline-offset: -5px; }
-    #garden-menu button:hover, #garden-trigger:hover { filter: brightness(1.2); }
+    #garden-trigger { z-index: 1; touch-action: manipulation; }
+    #garden-trigger img { pointer-events: none; }
+    #panel, #notice { z-index: 2; }
+    @media (hover: hover) and (pointer: fine) {
+      #garden-menu button:hover, #garden-trigger:hover { filter: brightness(1.2); }
+    }
+    @media (any-pointer: coarse) {
+      #garden-trigger { min-height: 44px; min-width: 96px; left: max(6px, env(safe-area-inset-left));
+        bottom: max(5px, env(safe-area-inset-bottom)); font-size: 14px; }
+      #garden-menu .garden-controls input, #garden-menu select { font-size: 16px; }
+      #garden-menu button { touch-action: manipulation; }
+      .garden-controls { overscroll-behavior: contain; }
+      .garden-controls button, .garden-controls select, .garden-row { min-height: 34px; }
+      #garden-back { min-height: 38px; }
+    }
+    @media (any-pointer: coarse) and (orientation: landscape) and (max-height: 540px) {
+      #garden-menu { width: min(70vw, 480px); height: 96dvh; aspect-ratio: auto; }
+    }
   </style>
 </head>
 <body>

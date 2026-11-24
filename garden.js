@@ -1,3 +1,32 @@
+// Activate a button on a completed tap even when the mobile browser suppresses
+// its compatibility click. Leave scrolling, form fields and keyboard clicks native.
+function enableButtonTaps(root) {
+  let tap;
+  root.addEventListener("touchstart", event => {
+    const finger = event.changedTouches[0];
+    const button = event.target.closest("button");
+    tap = event.touches.length === 1 && button
+      ? { button, id: finger.identifier, x: finger.clientX, y: finger.clientY } : null;
+    if (tap) event.stopPropagation();
+  }, { passive: true });
+  root.addEventListener("touchmove", event => {
+    if (!tap) return;
+    const finger = event.touches[0];
+    if (event.touches.length !== 1 || Math.hypot(finger.clientX - tap.x, finger.clientY - tap.y) > 12) tap = null;
+  }, { passive: true });
+  root.addEventListener("touchcancel", () => { tap = null; });
+  root.addEventListener("touchend", event => {
+    const target = tap;
+    tap = null;
+    const finger = event.changedTouches[0];
+    if (!target || !event.cancelable || finger.identifier !== target.id ||
+        !target.button.contains(document.elementFromPoint(finger.clientX, finger.clientY))) return;
+    event.preventDefault();
+    event.stopPropagation();
+    target.button.click();
+  }, { passive: false });
+}
+
 export function installGarden(module, canvas) {
   const trigger = document.querySelector("#garden-trigger");
   const menu = document.querySelector("#garden-menu");
@@ -24,8 +53,13 @@ export function installGarden(module, canvas) {
     message.textContent = feedback;
   }
 
+  enableButtonTaps(trigger);
+  enableButtonTaps(menu);
+  for (const type of ["pointerdown", "pointerup"]) {
+    trigger.addEventListener(type, event => event.stopPropagation());
+  }
   trigger.addEventListener("click", () => {
-    if (!updateAvailability()) return;
+    if (menu.open || !updateAvailability()) return;
     resume = module._gardenState(4) === 0;
     if (resume) module._gardenChange(4, 1);
     sun.value = module._gardenState(0);

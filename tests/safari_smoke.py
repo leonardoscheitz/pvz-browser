@@ -79,6 +79,37 @@ def run(driver, url):
       };
       req.onerror = () => done(false);
     """))
+    if mobile:
+        # Use real touchscreen actions for every button, including the opener.
+        def tap_element(element):
+            x, y = driver.execute_script("""
+                arguments[0].scrollIntoView({block: 'nearest'});
+                const r = arguments[0].getBoundingClientRect();
+                return [r.x + r.width / 2, r.y + r.height / 2];
+            """, element)
+            pointer = ActionBuilder(driver, mouse=PointerInput("touch", "finger"))
+            pointer.pointer_action.move_to_location(round(x), round(y))
+            pointer.pointer_action.pointer_down()
+            pointer.pointer_action.pause(.08)
+            pointer.pointer_action.pointer_up()
+            pointer.perform()
+
+        trigger = driver.find_element(By.ID, "garden-trigger")
+        end = monotonic() + 60
+        while not trigger.is_displayed():
+            if monotonic() >= end:
+                raise TimeoutError("Adventure did not reach the lawn")
+            click(545, 133)
+            sleep(.7)
+        for turn in range(2):
+            tap_element(trigger)
+            wait.until(lambda d: d.execute_script("return document.querySelector('#garden-menu').open && Module._gardenState(4) === 1"))
+            free = driver.find_element(By.ID, "garden-free")
+            tap_element(free)
+            wait.until(lambda d: d.execute_script("return Module._gardenState(2)") == (1 - turn))
+            tap_element(driver.find_element(By.ID, "garden-back"))
+            wait.until(lambda d: d.execute_script("return !document.querySelector('#garden-menu').open && Module._gardenState(4) === 0"))
+        print("iOS Safari: two touch cycles opened the garden, changed planting and resumed the game", flush=True)
     driver.refresh()
     wait.until(lambda d: d.execute_script(has_profile))
     if before != bytes(driver.execute_script(read)):
