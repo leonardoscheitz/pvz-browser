@@ -1,0 +1,35 @@
+name: Capturar interface GOTY+
+on:
+  push:
+    branches: [goty-plus/ui-kit]
+    paths:
+      - 'ui-kit.css'
+      - 'tools.html'
+      - 'scripts/build.py'
+      - 'tests/test_browser.py'
+      - '.github/workflows/ui-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PVZ_BROWSER: chromium
+      PVZ_UI_SCREENSHOTS: ui-previews
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python scripts/build.py
+      - run: python -m pip install playwright==1.62.0
+      - run: python -m playwright install --with-deps chromium
+      - run: python tests/test_browser.py WebGame.test_workshop_visual_assets
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: workshop-raster-previews
+          path: ui-previews/
+          if-no-files-found: ignore

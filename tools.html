@@ -5,32 +5,30 @@
 <meta name="theme-color" content="#172519"><title>Ferramentas — PvZ GOTY+</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<style>
-*{box-sizing:border-box}body{margin:0;background:#141b14;color:#f1e6c7;font:16px/1.5 system-ui,sans-serif}
-main{width:min(100%,560px);margin:auto;padding:24px max(16px,env(safe-area-inset-left)) 36px}
-h1,h2{font-family:Georgia,serif;color:#e0edab}h1{font-size:26px}h2{font-size:20px;margin-top:0}
-section{background:#32343a;border:2px solid #6c706c;border-radius:12px;padding:16px;margin:16px 0;box-shadow:inset 0 0 0 3px #22252a}
-button,a.action{display:inline-block;border:1px solid #9bb06b;border-radius:6px;color:#fff5cf;background:#3d552a;font:inherit;padding:10px 14px;text-decoration:none;cursor:pointer;margin:4px 0;min-height:44px}
-button:disabled{opacity:.5;cursor:wait}a{color:#d4ef97}p{margin:.5em 0}small{color:#d3ceb8}input{max-width:100%;font:inherit} [hidden]{display:none!important}
-:focus-visible{outline:3px solid #e6edb0;outline-offset:3px}
-</style></head>
-<body><main>
-<a class="action" href="./">← Voltar ao jogo</a>
-<h1>Ferramentas do jardim</h1>
-<section><h2>Sandbox experimental</h2><p>Abra uma sessão independente para experimentar o Menu Hack. Ela começa com um perfil novo, não importa nem grava o progresso da campanha e é descartada ao sair. Os cenários e a invocação de entidades serão adicionados posteriormente.</p><a class="action" href="./?sandbox=1">Abrir Sandbox</a></section>
-<section><h2>Jogar offline</h2>
-<p>Prepare os arquivos do jogo para jogar sem internet. A primeira preparação precisa de conexão e espaço livre. O navegador pode liberar esse armazenamento posteriormente.</p>
-<p><button id="offline-prepare" hidden>Preparar offline</button></p>
+<link rel="stylesheet" href="ui-kit.css">
+<style>*{box-sizing:border-box}.pvz-workshop{isolation:isolate} .pvz-workshop .backup-actions{display:flex;flex-wrap:wrap;gap:6px 10px} .pvz-workshop .pvz-panel{min-width:0} .pvz-workshop .pvz-panel p{overflow-wrap:anywhere}</style>
+</head>
+<body class="pvz-workshop"><main>
+<a class="pvz-stone" href="./">← Voltar ao jogo</a>
+<header><div class="pvz-logo" role="img" aria-label="Plants vs. Zombies"></div><h1 class="pvz-title">Ferramentas do jardim</h1></header>
+<div class="pvz-grid">
+<section class="pvz-panel"><div class="pvz-panel-art" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><div class="pvz-panel-heading"><span class="pvz-panel-icon sandbox" aria-hidden="true"></span><h2 class="pvz-title">Sandbox experimental</h2></div>
+<p>Seu próprio jardim de experiências. Use o Menu Hack sem afetar a campanha.</p>
+<p><a class="pvz-stone primary" href="./?sandbox=1">Abrir Sandbox</a></p>
+<small>Sessão temporária com perfil novo. Cenários e invocação de entidades ainda em desenvolvimento.</small></section>
+<section class="pvz-panel"><div class="pvz-panel-art" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><div class="pvz-panel-heading"><span class="pvz-panel-icon offline" aria-hidden="true"></span><h2 class="pvz-title">Jogar offline</h2></div>
+<p>Prepare os arquivos do jogo para jogar sem internet. A primeira preparação precisa de conexão e espaço livre.</p>
+<p><button class="pvz-stone" id="offline-prepare" hidden>Preparar offline</button></p>
 <p id="offline-status" role="status">Se seu navegador não oferecer suporte, jogue conectado.</p>
-<small>Para instalar, use o menu do navegador (Instalar aplicativo ou Adicionar à Tela de Início).</small>
+<small>Instale pelo menu do navegador. O armazenamento offline pode ser liberado pelo dispositivo.</small>
 </section>
-<section><h2>Salvar e recuperar progresso</h2>
-<p>Antes de abrir esta página, saia da fase pelo menu principal para gravar a partida. Feche todas as outras abas do jogo.</p>
-<button id="save-export">Exportar progresso</button>
+<section class="pvz-panel pvz-wide"><div class="pvz-panel-art" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><div class="pvz-panel-heading"><span class="pvz-panel-icon backup" aria-hidden="true"></span><h2 class="pvz-title">Salvar e recuperar progresso</h2></div>
+<p>Saia da fase pelo menu principal para gravar a partida e feche as outras abas do jogo antes de restaurar.</p>
+<div class="backup-actions"><button class="pvz-stone" id="save-export">Exportar progresso</button><button class="pvz-stone" id="save-previous">Baixar backup anterior à última restauração</button></div>
 <p><label for="save-file">Selecionar backup (.json)</label></p>
 <input type="file" id="save-file" accept=".json,application/json">
-<p><button id="save-import" disabled>Restaurar backup</button></p>
-<button id="save-previous">Baixar backup anterior à última restauração</button>
+<p><button class="pvz-stone" id="save-import" disabled>Restaurar backup</button></p>
 <p id="save-status" role="status">A restauração substitui o progresso local e guarda uma cópia de segurança antes.</p>
 </section>
+</div>
 </main><script type="module" src="pwa.js"></script><script type="module" src="save-tools.js"></script></body></html>

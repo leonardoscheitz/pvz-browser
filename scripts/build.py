@@ -4,6 +4,7 @@ import hashlib
 import io
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import struct
@@ -66,7 +67,7 @@ def pack_resources(site, archive):
 
 
 def publish_web_support(site):
-    for filename in ("tools.html", "pwa.js", "save-tools.js", "icon.svg"):
+    for filename in ("pwa.js", "save-tools.js", "icon.svg"):
         shutil.copyfile(ROOT / filename, site / filename)
     manifest = {
         "id": "./", "name": "Plants vs. Zombies GOTY Browser", "short_name": "PvZ GOTY",
@@ -75,7 +76,7 @@ def publish_web_support(site):
         "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"}],
     }
     (site / "manifest.webmanifest").write_text(json.dumps(manifest, ensure_ascii=False), encoding="utf-8")
-    files = sorted(["index.html", "tools.html", "pwa.js", "save-tools.js", "icon.svg", "manifest.webmanifest"] +
+    files = sorted(["index.html", "tools.html", "pwa.js", "save-tools.js", "icon.svg", "ui-kit.css", "manifest.webmanifest"] +
                    [p.relative_to(site).as_posix() for p in (site / "assets").iterdir()])
     worker = (ROOT / "pwa-worker.js").read_text(encoding="utf-8")
     digest = hashlib.sha256(worker.encode("utf-8"))
@@ -85,6 +86,43 @@ def publish_web_support(site):
     header = "const BUILD_ID = " + json.dumps(digest.hexdigest()[:20]) + ";\n"
     header += "const OFFLINE_FILES = " + json.dumps(files, separators=(",", ":")) + ";\n"
     (site / "sw.js").write_text(header + worker, encoding="utf-8")
+
+
+def publish_native_ui(site, archive, art):
+    """Resolve real raster art by original resource name, ignoring casing and separators."""
+    def key(value):
+        return re.sub(r"[^a-z0-9]", "", value.casefold())
+
+    paths = {}
+    for name in archive.namelist():
+        p = Path(name)
+        if p.parent.as_posix().casefold() == "images" and p.suffix.lower() in (".png", ".jpg", ".jpeg") and not p.stem.endswith("_"):
+            paths.setdefault(key(p.stem), []).append(name)
+    lookup = {name.casefold(): name for name in archive.namelist()}
+
+    def sprite(label, *candidates):
+        for candidate in candidates:
+            matches = paths.get(key(candidate), [])
+            if not matches:
+                continue
+            name = sorted(matches, key=lambda n: (not n.lower().endswith(".png"), n))[0]
+            p = Path(name)
+            url = publish_file(site, "ui-" + label.lower().replace("_", "-"), p.suffix[1:].lower(), archive.read(name))["url"]
+            mask_name = lookup.get(str(p.with_name(p.stem + "_.png")).casefold())
+            art[label] = url
+            art[label + "_MASK"] = ('url("' + publish_file(site, "ui-" + label.lower().replace("_", "-") + "-mask", "png", archive.read(mask_name))["url"] + '")') if mask_name else "none"
+            print(f"UI raster {label}: {name}")
+            return
+        raise ValueError(f"Original UI resource not found: {label} ({', '.join(candidates)})")
+
+    sprite("STONE_PRESSED", "options_backtogamebutton2")
+    for vertical, horizontal in (("top", "left"), ("top", "middle"), ("top", "right"),
+                                 ("center", "left"), ("center", "middle"), ("center", "right"),
+                                 ("bottom", "left"), ("bottom", "middle"), ("bottom", "right")):
+        sprite("DIALOG_" + vertical.upper() + "_" + horizontal.upper(), "dialog_" + vertical + horizontal, "dialog_" + vertical + "_" + horizontal)
+    sprite("SANDBOX_ART", "Shovel", "Shovel_hi_res")
+    sprite("OFFLINE_ART", "Almanac", "SelectorScreen_Almanac")
+    sprite("BACKUP_ART", "Trophy", "Trophy_hi_res", "Minigame_Trophy")
 
 
 def build(site):
@@ -107,7 +145,15 @@ def build(site):
         }
         art = {key: publish_file(site, "title-" + key.lower(), Path(name).suffix[1:],
                                  archive.read("images/" + name))["url"] for key, name in skin.items()}
+        publish_native_ui(site, archive, art)
 
+    # Reuse the already-published original image assets; no duplicate payload.
+    kit = (ROOT / "ui-kit.css").read_text(encoding="utf-8")
+    for key, value in art.items():
+        kit = kit.replace("{{" + key + "}}", value)
+    if "{{" in kit:
+        raise ValueError("Unresolved UI kit asset reference")
+    (site / "ui-kit.css").write_text(kit, encoding="utf-8")
     manifest = {"glue": glue, "wasm": wasm, "pak": pak, "properties": properties}
     storage = publish_file(site, "saves", "js", (ROOT / "saves.js").read_bytes())
     script = (ROOT / "game.js").read_text(encoding="utf-8").replace("./saves.js", "./" + Path(storage["url"]).name)
@@ -119,6 +165,8 @@ def build(site):
     for key, value in replacements.items():
         page = page.replace("{{" + key + "}}", value)
     (site / "index.html").write_text(page, encoding="utf-8")
+    tools_page = (ROOT / "tools.html").read_text(encoding="utf-8")
+    (site / "tools.html").write_text(tools_page, encoding="utf-8")
     publish_web_support(site)
     (site / ".nojekyll").touch()
     shutil.copytree(ROOT / "licenses", site / "licenses")

@@ -198,6 +198,36 @@ class WebGame(unittest.TestCase):
         finally:
             self.context.set_offline(False)
 
+    def test_workshop_visual_assets(self):
+        if os.environ.get("PVZ_BROWSER", "chromium") != "chromium":
+            self.skipTest("Visual kit smoke test on Chromium")
+        self.page.goto(self.url + "tools.html")
+        self.assertTrue(self.page.locator(".pvz-logo").is_visible())
+        self.assertEqual(self.page.locator(".pvz-panel-icon").count(), 3)
+        self.assertEqual(self.page.locator(".pvz-panel-art span").count(), 27)
+        self.assertTrue(self.page.locator("#save-export").is_visible())
+        self.assertTrue(self.page.locator("#save-import").is_disabled())
+        self.assertTrue(self.page.evaluate("""async () => {
+            const elements = document.querySelectorAll(".pvz-panel-art span, .pvz-panel-icon, #save-export");
+            return (await Promise.all([...elements].map(async el => {
+                const style = getComputedStyle(el);
+                const match = style.backgroundImage.match(/url\\(["']?(.*?)["']?\\)/);
+                if (!match || !/\\.(png|jpe?g)$/i.test(new URL(match[1], location.href).pathname)) return false;
+                const img = new Image();
+                img.src = match[1];
+                try { await img.decode(); } catch { return false; }
+                return img.naturalWidth > 0;
+            }))).every(Boolean);
+        }"""))
+        for width, height in [(320,568),(390,844),(844,390),(1280,800)]:
+            self.page.set_viewport_size({"width": width, "height": height})
+            self.assertTrue(self.page.evaluate("document.documentElement.scrollWidth <= innerWidth"))
+            self.assertGreaterEqual(self.page.locator("#save-export").bounding_box()["height"], 44)
+            if os.environ.get("PVZ_UI_SCREENSHOTS"):
+                folder = Path(os.environ["PVZ_UI_SCREENSHOTS"])
+                folder.mkdir(parents=True, exist_ok=True)
+                self.page.screenshot(path=str(folder / f"workshop-{width}x{height}.png"), full_page=True)
+
     def test_sandbox_never_mounts_campaign(self):
         if os.environ.get("PVZ_BROWSER", "chromium") != "chromium":
             self.skipTest("Sandbox isolation covered on Chromium")
