@@ -8,6 +8,13 @@ const panel = document.querySelector("#panel");
 const notice = document.querySelector("#notice");
 const retry = document.querySelector("#retry");
 const toolsLink = document.querySelector("#tools-link");
+const sandbox = new URLSearchParams(location.search).get("sandbox") === "1";
+if (sandbox) {
+  document.title = "Sandbox — PvZ GOTY+";
+  toolsLink.textContent = "Sair do Sandbox";
+  toolsLink.href = "./";
+  document.querySelector("#sandbox-indicator").hidden = false;
+}
 const bar = document.querySelector("[role=progressbar]");
 const progressText = document.querySelector("#progress-text");
 const expectedBytes = config.pak.size + config.wasm.size;
@@ -142,13 +149,19 @@ async function start() {
   if (!window.WebAssembly || !window.DecompressionStream || !WebAssembly.instantiateStreaming) {
     throw new Error("Abra o jogo em uma versão atual do Chrome, Edge, Firefox ou Safari.");
   }
-  releaseProfile = await reserveProfile();
+  if (!sandbox) releaseProfile = await reserveProfile();
   const [module, resources] = await Promise.all([initializeEngine(), gameAssets()]);
   const fs = module.FS;
   fs.writeFile("/main.pak", resources.pak, { canOwn: true });
   fs.mkdir("/properties");
   for (const [path, bytes] of resources.properties) fs.writeFile("/" + path, bytes, { canOwn: true });
-  persistent = await mountSaves(module, notify);
+  if (sandbox) {
+    // MEMFS only: never mount IDBFS, migrate profiles or acquire the campaign lock.
+    fs.mkdir("/saves");
+    notify("Sandbox: sessão temporária e independente. O progresso da campanha não será alterado.");
+  } else {
+    persistent = await mountSaves(module, notify);
+  }
   // Let the browser paint the final loading update before the engine initializes SDL.
   await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   if (failed) return;
@@ -177,7 +190,8 @@ window.onGameExit = async () => {
 };
 toolsLink.addEventListener("click", async event => {
   event.preventDefault();
-  if (!confirm("Saia da fase pelo menu principal para salvar o progresso antes de abrir as ferramentas. Continuar?")) return;
+  if (!confirm(sandbox ? "Sair do Sandbox? A sessão temporária será descartada." :
+    "Saia da fase pelo menu principal para salvar o progresso antes de abrir as ferramentas. Continuar?")) return;
   toolsLink.style.pointerEvents = "none";
   try {
     if (persistent) await sync(window.Module.FS);
