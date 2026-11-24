@@ -1,8 +1,8 @@
 name: Compilar motor do Menu Hack
 on:
   push:
-    branches: [motor-menu-hack]
-    paths: ['engine/garden.inc', '.github/workflows/garden-engine.yml']
+    branches: [motor-menu-hack, goty-plus/motor-fase-2]
+    paths: ['engine/garden.inc', 'scripts/patch_garden_engine.py', '.github/workflows/garden-engine.yml', 'tests/test_browser.py', 'garden.js', 'index.html']
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,20 +25,31 @@ jobs:
       - name: Compilar o motor com os controles do jardim
         working-directory: upstream
         run: |
-          cat ../engine/garden.inc >> src/LawnApp.cpp
+          python3 ../scripts/patch_garden_engine.py .
           bash wasm/build-wasm.sh --deps
           cd build-wasm
+          rm -f ../../vendor/pvz-garden.zip
           zip -X ../../vendor/pvz-garden.zip pvz-portable.js pvz-portable.wasm
+      - name: Validar motor novo no Chromium
+        env:
+          PVZ_BROWSER: chromium
+          PVZ_REQUIRE_ADVANCED: '1'
+        run: |
+          sha256sum vendor/pvz-garden.zip | cut -d' ' -f1 > vendor/pvz-garden.sha256
+          python3 scripts/build.py
+          python3 -m pip install playwright==1.62.0
+          python3 -m playwright install --with-deps chromium
+          python3 tests/test_browser.py
       - uses: actions/upload-artifact@v7
         with:
           name: pvz-garden
           path: vendor/pvz-garden.zip
       - name: Registrar o motor no ramo de compilação
-        if: github.ref == 'refs/heads/motor-menu-hack'
+        if: github.ref == 'refs/heads/motor-menu-hack' || github.ref == 'refs/heads/goty-plus/motor-fase-2'
         run: |
           sha256sum vendor/pvz-garden.zip | cut -d' ' -f1 > vendor/pvz-garden.sha256
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add vendor/pvz-garden.zip vendor/pvz-garden.sha256
           git commit -m "Compilar motor GOTY com controles do jardim"
-          git push origin HEAD:motor-menu-hack
+          git push origin "HEAD:${GITHUB_REF_NAME}"
