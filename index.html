@@ -134,33 +134,16 @@
       #garden-back { top: auto; bottom: 4%; height: 16%; }
     }
 
-    /* The Sandbox toolbar occupies its own viewport row, never the native canvas.
-       Reserve the same space even when the level or hack button is unavailable. */
-    body.sandbox-session { --sandbox-bar-height: calc(56px + env(safe-area-inset-bottom, 0px)); }
-    body.sandbox-session #canvas-container { bottom: var(--sandbox-bar-height); }
-    body.sandbox-session #frame {
-      width: min(100vw, calc((100vh - var(--sandbox-bar-height)) * 1.333333333));
-      width: min(100vw, calc((100dvh - var(--sandbox-bar-height)) * 1.333333333));
+    /* Only the selector's Sandbox entry is visible over the main menu.
+       Exit is a normal flow item inside the modal; no reserved viewport area. */
+    body.sandbox-session #sandbox-level-trigger { min-height: 38px; }
+    #sandbox-level-menu #tools-link {
+      position: static; inset: auto; margin: 0; min-height: 40px; flex-shrink: 0;
+      font-size: 16px; padding: .45em .75em .55em;
     }
-    #sandbox-toolbar {
-      position: fixed; bottom: 0; left: 0; right: 0; height: var(--sandbox-bar-height);
-      display: flex; align-items: center; gap: 6px;
-      padding: 4px max(6px, env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom, 0px)) max(6px, env(safe-area-inset-left));
-      background: #100e0e; z-index: 2;
-    }
-    #sandbox-toolbar #sandbox-indicator {
-      position: static; flex: 0 0 auto; border: 0; padding: 0 4px; background: transparent;
-      color: #d6bf86; font: bold 12px/1.2 var(--pvz-display);
-    }
-    #sandbox-toolbar #tools-link, #sandbox-toolbar #garden-trigger, #sandbox-toolbar #sandbox-level-trigger {
-      position: static; inset: auto; flex: 0 1 auto; min-width: 0; min-height: 44px;
-      padding: .45em .75em .55em; font-size: clamp(12px, 2.2vw, 16px); line-height: 1.15;
-      text-align: center; justify-content: center; white-space: normal;
-    }
-    #sandbox-toolbar #tools-link { margin-left: auto; flex-shrink: 0; }
-    @media (max-width: 380px) {
-      #sandbox-toolbar #sandbox-indicator { display: none; }
-      #sandbox-toolbar #garden-trigger, #sandbox-toolbar #sandbox-level-trigger { flex: 1 1 auto; }
+    @media (any-pointer: coarse) {
+      body.sandbox-session #sandbox-level-trigger,
+      #sandbox-level-menu #tools-link { min-height: 44px; }
     }
   </style>
 </head>
@@ -207,7 +190,7 @@
       <dialog id="sandbox-level-menu" aria-labelledby="sandbox-level-title">
         <div class="sandbox-stone-card">
           <form>
-            <h2 id="sandbox-level-title" class="pvz-title">Escolher fase</h2>
+            <h2 id="sandbox-level-title" class="pvz-title">Sandbox</h2>
             <label for="sandbox-level">Adventure</label>
             <select id="sandbox-level" required></select>
             <output aria-live="polite"></output>
@@ -217,7 +200,6 @@
         </div>
       </dialog>
   </main>
-  <nav id="sandbox-toolbar" aria-label="Controles do Sandbox" hidden></nav>
   <script id="config" type="application/json">{{CONFIG}}</script>
   <script type="module" src="{{SCRIPT}}"></script>
 </body>
