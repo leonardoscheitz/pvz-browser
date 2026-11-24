@@ -1,13 +1,17 @@
 """Open the built game in Apple's installed Safari and reload a disposable profile."""
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+import os
 from pathlib import Path
 from threading import Thread
 from time import monotonic, sleep
 
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.actions.action_builder import ActionBuilder
+from selenium.webdriver.common.actions.pointer_input import PointerInput
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 
 
@@ -16,8 +20,23 @@ def run(driver, url):
     wait = WebDriverWait(driver, 60)
     wait.until(lambda d: d.execute_script("return document.querySelector('#splash').hidden"))
     canvas = driver.find_element(By.ID, "canvas")
+    mobile = driver.capabilities.get("platformName", "").lower() == "ios"
+    if mobile:
+        driver.execute_script("window.testTouchCount = 0; document.addEventListener('touchstart', () => testTouchCount++, {passive:true})")
+        initial_height = driver.execute_script("return visualViewport.height")
 
     def click(x, y):
+        if mobile:
+            left, top, width, height = driver.execute_script("""
+                const r = arguments[0].getBoundingClientRect(); return [r.left,r.top,r.width,r.height];
+            """, canvas)
+            actions = ActionBuilder(driver, mouse=PointerInput("touch", "finger"))
+            actions.pointer_action.move_to_location(round(left + x * width / 800), round(top + y * height / 600))
+            actions.pointer_action.pointer_down()
+            actions.pointer_action.pause(0.08)
+            actions.pointer_action.pointer_up()
+            actions.perform()
+            return
         size = canvas.size
         dx = round((x / 800 - 0.5) * size["width"])
         dy = round((y / 600 - 0.5) * size["height"])
@@ -35,7 +54,14 @@ def run(driver, url):
     # to click the transparent keyboard bridge, which intentionally ignores pointer events.
     ActionChains(driver).send_keys("Garden").perform()
     sleep(0.2)
-    click(280, 395)
+    if mobile:
+        touches, height = driver.execute_script("return [testTouchCount, visualViewport.height]")
+        if touches < 1:
+            raise AssertionError("Safari did not receive touch events")
+        print("iOS touches", touches, "viewport before and during text entry", initial_height, height, flush=True)
+        ActionChains(driver).send_keys(Keys.ENTER).perform()
+    else:
+        click(280, 395)
     has_profile = "return window.Module?.FS?.analyzePath('/saves/userdata/users.dat').exists"
     wait.until(lambda d: d.execute_script(has_profile))
     read = "return Array.from(Module.FS.readFile('/saves/userdata/users.dat'))"
@@ -65,7 +91,12 @@ if __name__ == "__main__":
     with ThreadingHTTPServer(("127.0.0.1", 0), partial(SimpleHTTPRequestHandler, directory=str(root / "dist"))) as server:
         Thread(target=server.serve_forever, daemon=True).start()
         try:
-            with webdriver.Safari() as browser:
+            options = webdriver.SafariOptions()
+            if simulator := os.environ.get("PVZ_IOS_SIMULATOR"):
+                options.set_capability("platformName", "iOS")
+                options.set_capability("safari:useSimulator", True)
+                options.set_capability("safari:deviceUDID", simulator)
+            with webdriver.Safari(options=options) as browser:
                 run(browser, f"http://127.0.0.1:{server.server_port}/")
         finally:
             server.shutdown()

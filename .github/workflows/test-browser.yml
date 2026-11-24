@@ -45,3 +45,21 @@ jobs:
           python -m pip install 'selenium>=4,<5'
           sudo safaridriver --enable
           python tests/safari_smoke.py
+  safari-ios:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python scripts/build.py
+      - run: python -m pip install 'selenium>=4,<5'
+      - name: Abrir o Safari de um iPhone simulado
+        run: |
+          device=$(xcrun simctl list devices available --json | python -c "import json,sys; print(next(d['udid'] for runtime,ds in json.load(sys.stdin)['devices'].items() if '.iOS-' in runtime for d in ds if d['name'].startswith('iPhone')))")
+          defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool NO
+          xcrun simctl bootstatus "$device" -b
+          open -a Simulator
+          sudo safaridriver --enable
+          PVZ_IOS_SIMULATOR="$device" python tests/safari_smoke.py
