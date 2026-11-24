@@ -9,6 +9,7 @@
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preload" as="image" href="{{BACKGROUND}}">
+  <link rel="stylesheet" href="ui-kit.css">
   <style>
     * { box-sizing: border-box }
     html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #100e0e; color: white; }
@@ -39,13 +40,13 @@
       max-width: 94%; padding: .45rem .7rem; border-radius: .3rem; background: #262114f2; font-size: .85rem; }
     #notice button { margin-left: .5rem; padding: .1rem .45rem; }
     .sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-    #garden-trigger, #garden-menu button { font-family: Georgia, serif; font-weight: 800; }
+    #garden-trigger, #garden-menu button { font-family: var(--pvz-display); font-weight: 900; }
     #garden-trigger { position: absolute; bottom: 1%; left: 1%; background: url('{{STONE_BUTTON}}') center / 100% 100%;
       padding: .48em .85em .58em .45em; border: 0; color: #def798; text-shadow: 1px 2px 2px #181321;
       display: flex; align-items: center; gap: .15em; font-size: clamp(12px,1.85cqw,19px); }
     #tools-link { position: absolute; right: 1%; bottom: 1%; z-index: 1; padding: .5em .7em;
-      color: #def798; background: #323b25; border: 1px solid #82935c; border-radius: .3rem;
-      font: bold clamp(12px,1.8cqw,18px)/1.3 Georgia, serif; text-decoration: none; touch-action: manipulation; }
+      color: #def798; background: var(--pvz-stone) center / 100% 100% no-repeat; border: 0; border-radius: 0;
+      font: bold clamp(12px,1.8cqw,18px)/1.3 var(--pvz-display); text-decoration: none; touch-action: manipulation; }
     #sandbox-indicator { position: absolute; top: max(6px, env(safe-area-inset-top)); right: 8px; z-index: 1; padding: 4px 9px; background: #433421e8; color: #ffe7a1; border: 1px solid #b89c5e; border-radius: 4px; font: bold 12px system-ui,sans-serif; pointer-events: none; }
     #tools-link:focus-visible { outline: 2px solid white; }
     @media (any-pointer: coarse) { #tools-link { min-height: 44px; display: grid; place-items: center; } }
@@ -53,7 +54,7 @@
     #garden-menu { position: fixed; inset: 0 auto auto 0; margin: 0; border: 0; padding: 0;
       width: 100vw; height: 100vh; height: 100dvh; max-width: none; max-height: none;
       background: transparent; color: #fff1cb; overflow: hidden;
-      font: bold clamp(14px, 2.6vmin, 18px)/1.2 Georgia, serif; }
+      font: bold clamp(14px, 2.6vmin, 18px)/1.2 var(--pvz-display); }
     #garden-menu[open] { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; }
     .garden-card { position: relative; width: min(420px, 95vw); height: clamp(465px, 119vw, 496px);
       max-width: 96%; max-height: 96%; }
@@ -71,9 +72,10 @@
     .garden-controls input[type=number] { width: 5.35em; }
     .garden-controls input[type=checkbox] { accent-color: #a4cd65; width: 1.35em; height: 1.35em; }
     #garden-menu button { font-size: inherit; }
-    .garden-controls button { padding: .25em .4em; background: #494954; border-color: #797580; color: #d5eca6; }
+    #garden-menu .garden-controls .pvz-stone { min-height: 34px; padding: .4em .5em .5em; }
+    .garden-controls button { padding: .35em .5em; color: #d5eca6; }
     .garden-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .4em; }
-    #garden-menu .garden-actions button { font-size: .87em; padding: .4em .12em; white-space: nowrap; }
+    #garden-menu .garden-actions button { font-size: .87em; padding: .5em .55em; white-space: nowrap; }
     #garden-menu output { position: absolute; top: 76%; left: 8%; right: 8%; font: bold .8em/1.2 system-ui, sans-serif;
       text-align: center; color: #fff2cd; text-shadow: 1px 1px 2px #181421; }
     #garden-back { position: absolute; left: 12%; right: 12%; top: 81%; height: 12%; background: url('{{STONE_BUTTON}}') center / 100% 100%;
@@ -146,8 +148,8 @@
         </div>
       </div>
       <span id="sandbox-indicator" hidden>Sandbox · temporário</span>
-      <a id="tools-link" href="tools.html" hidden>Ferramentas</a>
-      <button id="garden-trigger" type="button" aria-haspopup="dialog" aria-controls="garden-menu" hidden><img src="{{SPADE}}" alt="">Menu Hack</button>
+      <a class="pvz-stone" id="tools-link" href="tools.html" hidden>Ferramentas</a>
+      <button class="pvz-stone" id="garden-trigger" type="button" aria-haspopup="dialog" aria-controls="garden-menu" hidden><img src="{{SPADE}}" alt="">Menu Hack</button>
       <div id="panel" hidden>
         <div class="dialog"><p id="message" role="status"></p><button id="retry" type="button">Tentar novamente</button></div>
       </div>
@@ -157,19 +159,19 @@
       <dialog id="garden-menu" aria-labelledby="garden-title">
         <div class="garden-card">
           <div class="garden-controls">
-          <h2 id="garden-title">Menu Hack</h2>
-          <form class="garden-row"><label for="garden-sun">Sol</label><input id="garden-sun" type="number" min="0" max="9990" required inputmode="numeric"><button>Aplicar</button></form>
-          <form class="garden-row"><label for="garden-coins">Moedas</label><input id="garden-coins" type="number" min="0" max="999990" step="10" required inputmode="numeric"><button>Aplicar</button></form>
+          <h2 class="pvz-title" id="garden-title">Menu Hack</h2>
+          <form class="garden-row"><label for="garden-sun">Sol</label><input id="garden-sun" type="number" min="0" max="9990" required inputmode="numeric"><button class="pvz-stone">Aplicar</button></form>
+          <form class="garden-row"><label for="garden-coins">Moedas</label><input id="garden-coins" type="number" min="0" max="999990" step="10" required inputmode="numeric"><button class="pvz-stone">Aplicar</button></form>
           <label class="garden-row">Plantio grátis<input type="checkbox" id="garden-free"></label>
           <label class="garden-row">Velocidade<select id="garden-speed"><option value="0">Lenta</option><option value="1">Normal</option><option value="2">Rápida</option></select></label>
-          <div class="garden-actions"><button id="garden-heal">Curar plantas</button><button id="garden-clear">Limpar zumbis</button></div>
-          <div class="garden-actions"><button id="garden-relaxed" type="button">Modo livre</button><button id="garden-normal" type="button">Regras normais</button></div>
+          <div class="garden-actions"><button class="pvz-stone" id="garden-heal">Curar plantas</button><button class="pvz-stone" id="garden-clear">Limpar zumbis</button></div>
+          <div class="garden-actions"><button class="pvz-stone" id="garden-relaxed" type="button">Modo livre</button><button class="pvz-stone" id="garden-normal" type="button">Regras normais</button></div>
           <label class="garden-row" id="garden-infinite-row" hidden>Sol infinito<input type="checkbox" id="garden-infinite"></label>
           <label class="garden-row" id="garden-recharge-row" hidden>Recarga instantânea<input type="checkbox" id="garden-recharge"></label>
-          <div class="garden-actions" id="garden-chill-row" hidden><button id="garden-chill" type="button">Retardar zumbis</button></div>
+          <div class="garden-actions" id="garden-chill-row" hidden><button class="pvz-stone" id="garden-chill" type="button">Retardar zumbis</button></div>
         </div>
         <output aria-live="polite"></output>
-        <button id="garden-back" autofocus>Voltar ao jogo</button>
+        <button class="pvz-stone" id="garden-back" autofocus>Voltar ao jogo</button>
         </div>
       </dialog>
   </main>
