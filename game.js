@@ -8,7 +8,10 @@ const panel = document.querySelector("#panel");
 const notice = document.querySelector("#notice");
 const retry = document.querySelector("#retry");
 const toolsLink = document.querySelector("#tools-link");
-const sandbox = new URLSearchParams(location.search).get("sandbox") === "1";
+const params = new URLSearchParams(location.search);
+const sandbox = params.get("sandbox") === "1";
+const chosenLevel = Number(params.get("level") || "1");
+const sandboxLevel = Number.isInteger(chosenLevel) && chosenLevel >= 1 && chosenLevel <= 50 ? chosenLevel : 1;
 if (sandbox) {
   document.title = "Sandbox — PvZ GOTY+";
   toolsLink.textContent = "Sair do Sandbox";
@@ -158,7 +161,9 @@ async function start() {
   if (sandbox) {
     // MEMFS only: never mount IDBFS, migrate profiles or acquire the campaign lock.
     fs.mkdir("/saves");
-    notify("Sandbox: sessão temporária e independente. O progresso da campanha não será alterado.");
+    if (typeof module._gardenSandboxEnable !== "function" || !module._gardenSandboxEnable(sandboxLevel))
+      throw new Error("O motor desbloqueado do Sandbox não está disponível nesta versão.");
+    notify("Sandbox: modos e plantas liberados. Sua campanha permanece intacta.");
   } else {
     persistent = await mountSaves(module, notify);
   }
@@ -175,7 +180,51 @@ async function start() {
   if (!failed) {
     removeGarden = installGarden(module, canvas);
     toolsLink.hidden = false;
+    if (sandbox) installSandboxSelector(module);
   }
+}
+
+function installSandboxSelector(module) {
+  const button = document.querySelector("#sandbox-level-trigger");
+  const dialog = document.querySelector("#sandbox-level-menu");
+  const choices = dialog.querySelector("#sandbox-level");
+  const status = dialog.querySelector("output");
+  const areas = ["Dia", "Noite", "Piscina", "Neblina", "Telhado"];
+  for (let area = 0; area < 5; area++) {
+    const group = document.createElement("optgroup");
+    group.label = areas[area];
+    for (let stage = 1; stage <= 10; stage++) {
+      const option = document.createElement("option");
+      option.value = area * 10 + stage;
+      option.textContent = (area + 1) + "-" + stage + " · " + areas[area];
+      group.append(option);
+    }
+    choices.append(group);
+  }
+  function refresh() {
+    if (failed) { button.hidden = true; clearInterval(timer); return; }
+    button.hidden = !module._gardenSandboxMenu() || !panel.hidden;
+  }
+  const timer = setInterval(refresh, 250);
+  refresh();
+  button.addEventListener("click", () => {
+    const level = module._gardenSandboxMenu();
+    if (!level || dialog.open) return;
+    choices.value = String(Math.min(50, Math.max(1, level)));
+    status.textContent = "Escolha qualquer fase do Adventure.";
+    dialog.showModal();
+  });
+  dialog.querySelector("form").addEventListener("submit", event => {
+    event.preventDefault();
+    if (module._gardenSandboxLevel(Number(choices.value))) {
+      dialog.close();
+      refresh();
+      canvas.focus({preventScroll: true});
+    } else status.textContent = "Volte ao menu principal para iniciar outra fase.";
+  });
+  dialog.querySelector("[data-close]").onclick = () => dialog.close();
+  for (const type of ["keydown", "keyup", "pointerdown", "pointerup", "touchstart", "touchend"])
+    dialog.addEventListener(type, event => event.stopPropagation());
 }
 
 window.onGameExit = async () => {
