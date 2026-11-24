@@ -30,7 +30,10 @@ def run(driver, url):
         click(400, 550)
         sleep(0.7)
     click(390, 312)
-    driver.find_element(By.ID, "pvz-soft-keyboard").send_keys("Garden")
+    wait.until(lambda d: d.execute_script("return document.activeElement.id === 'pvz-soft-keyboard'"))
+    # Send physical keystrokes to the focused editor. Element.send_keys asks Safari
+    # to click the transparent keyboard bridge, which intentionally ignores pointer events.
+    ActionChains(driver).send_keys("Garden").perform()
     sleep(0.2)
     click(280, 395)
     has_profile = "return window.Module?.FS?.analyzePath('/saves/userdata/users.dat').exists"
