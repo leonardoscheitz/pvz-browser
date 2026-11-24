@@ -29,6 +29,7 @@ jobs:
     timeout-minutes: 15
     env:
       PVZ_BROWSER: ${{ matrix.browser }}
+      PVZ_REQUIRE_ADVANCED: ${{ matrix.browser == 'chromium' && '1' || '' }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6

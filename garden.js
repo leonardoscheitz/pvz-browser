@@ -36,6 +36,17 @@ export function installGarden(module, canvas) {
   const sun = menu.querySelector("#garden-sun");
   const coins = menu.querySelector("#garden-coins");
   const panel = document.querySelector("#panel");
+  const advanced = [[7, "#garden-infinite", "#garden-infinite-row", "Sol infinito"],
+                    [8, "#garden-recharge", "#garden-recharge-row", "Recarga instantânea"]];
+  const chill = menu.querySelector("#garden-chill");
+  function refreshAdvanced() {
+    for (const [field, input, row] of advanced) {
+      const state = module._gardenState(field);
+      menu.querySelector(row).hidden = state < 0;
+      menu.querySelector(input).checked = state === 1;
+    }
+    menu.querySelector("#garden-chill-row").hidden = module._gardenState(9) < 0;
+  }
   let resume = false;
   const viewport = window.visualViewport;
   function fitMenu() {
@@ -75,6 +86,7 @@ export function installGarden(module, canvas) {
     free.checked = Boolean(module._gardenState(2));
     speed.value = module._gardenState(3);
     message.textContent = "Partida pausada";
+    refreshAdvanced();
     menu.showModal();
     fitMenu();
     viewport?.addEventListener("resize", fitMenu);
@@ -92,6 +104,14 @@ export function installGarden(module, canvas) {
   speed.addEventListener("change", () => change(3, Number(speed.value), "Velocidade alterada."));
   menu.querySelector("#garden-heal").onclick = () => change(5, 0, "Plantas curadas.");
   menu.querySelector("#garden-clear").onclick = () => change(6, 0, "Zumbis do gramado removidos.");
+  for (const [field, input, , label] of advanced) {
+    const toggle = menu.querySelector(input);
+    toggle.addEventListener("change", () => {
+      change(field, Number(toggle.checked), label + (toggle.checked ? " ativado." : " desativado."));
+      sun.value = module._gardenState(0);
+    });
+  }
+  chill.onclick = () => change(9, 0, "Lentidão aplicada aos zumbis elegíveis.");
   // Presets only use commands that the currently shipped native engine exposes.
   function preset(commands, feedback) {
     for (const [field, value] of commands) {
@@ -101,10 +121,15 @@ export function installGarden(module, canvas) {
     coins.value = module._gardenState(1);
     free.checked = Boolean(module._gardenState(2));
     speed.value = module._gardenState(3);
+    refreshAdvanced();
     message.textContent = feedback;
   }
   menu.querySelector("#garden-relaxed").onclick = () => preset([[0,9990],[2,1],[3,1]], "Sol máximo e plantio grátis.");
-  menu.querySelector("#garden-normal").onclick = () => preset([[2,0],[3,1]], "Custo e velocidade normais.");
+  menu.querySelector("#garden-normal").onclick = () => {
+    const commands = [[2,0],[3,1]];
+    for (const [field] of advanced) if (module._gardenState(field) >= 0) commands.push([field,0]);
+    preset(commands, "Modificadores contínuos desligados; custo e velocidade normais.");
+  };
   menu.querySelector("#garden-back").onclick = () => menu.close();
   menu.addEventListener("close", () => {
     viewport?.removeEventListener("resize", fitMenu);
