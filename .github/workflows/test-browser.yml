@@ -29,6 +29,7 @@ jobs:
     timeout-minutes: 15
     env:
       PVZ_BROWSER: ${{ matrix.browser }}
+      PVZ_REQUIRE_ADVANCED: ${{ matrix.browser == 'chromium' && '1' || '' }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
@@ -65,4 +66,20 @@ jobs:
           xcrun simctl bootstatus "$device" -b
           open -a Simulator
           sudo safaridriver --enable
-          PVZ_IOS_SIMULATOR="$device" python tests/safari_smoke.py
+          # The simulator may report booted before MobileSafari is ready for WebDriver.
+          # Retry only infrastructure failures before a browser session exists.
+          for attempt in 1 2; do
+            xcrun simctl launch "$device" com.apple.mobilesafari
+            sleep 10
+            set +e
+            PVZ_IOS_SIMULATOR="$device" python tests/safari_smoke.py 2>&1 | tee "$RUNNER_TEMP/safari-ios-$attempt.log"
+            result=${PIPESTATUS[0]}
+            set -e
+            if [ "$result" -eq 0 ]; then exit 0; fi
+            if [ "$attempt" -eq 2 ] || ! grep -Eq 'SessionNotCreatedException:.*(timed out|Could not create a session)|Can not connect to the Service /usr/bin/safaridriver' "$RUNNER_TEMP/safari-ios-$attempt.log"; then
+              exit "$result"
+            fi
+            echo "Safari WebDriver indisponível antes dos testes; reiniciando somente o navegador."
+            xcrun simctl terminate "$device" com.apple.mobilesafari || true
+            sleep 5
+          done
