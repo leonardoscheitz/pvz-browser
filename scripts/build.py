@@ -25,6 +25,14 @@ def publish_file(site, stem, extension, data):
     return {"url": path, "size": len(data)}
 
 
+def gzip_bytes(data):
+    # GzipFile also fixes the OS byte across supported Python versions.
+    output = io.BytesIO()
+    with gzip.GzipFile(fileobj=output, mode="wb", compresslevel=9, mtime=0) as compressed:
+        compressed.write(data)
+    return output.getvalue()
+
+
 def engine_archive():
     data = ENGINE.read_bytes()
     if hashlib.sha256(data).hexdigest() != ENGINE_SHA256:
@@ -52,10 +60,7 @@ def pack_resources(site, archive):
         raw_size = pak.tell()
         pak.seek(0)
         while raw := pak.read(PAK_PART_BYTES):
-            output = io.BytesIO()
-            with gzip.GzipFile(fileobj=output, mode="wb", compresslevel=9, mtime=0) as compressed:
-                compressed.write(raw)
-            part = publish_file(site, "lawn", "bin", output.getvalue())
+            part = publish_file(site, "lawn", "bin", gzip_bytes(raw))
             parts.append({**part, "offset": pak.tell() - len(raw), "rawSize": len(raw)})
     return {"parts": parts, "size": sum(p["size"] for p in parts), "rawSize": raw_size}
 
@@ -64,8 +69,7 @@ def build(site):
     (site / "assets").mkdir()
     with engine_archive() as engine:
         glue = publish_file(site, "engine", "js", engine.read("pvz-portable.js"))
-        wasm = publish_file(site, "engine-wasm", "bin",
-                            gzip.compress(engine.read("pvz-portable.wasm"), compresslevel=9, mtime=0))
+        wasm = publish_file(site, "engine-wasm", "bin", gzip_bytes(engine.read("pvz-portable.wasm")))
     with ZipFile(ROOT / "modern" / "pvz-goty.zip") as archive:
         pak = pack_resources(site, archive)
         properties = []

@@ -17,7 +17,9 @@ definições do jogo. Somente a pasta dist é publicada. O executável de Window
 o instalador, os componentes da EA e o sistema Wine ficam fora do site. Os
 links antigos para modern/boxedwine.html redirecionam para o jogo nativo.
 Os recursos estáticos têm nomes versionados por conteúdo e usam o cache HTTP
-do navegador. Descompactação e compilação do WASM ocorrem durante a leitura.
+do navegador. O pacote de recursos é dividido em partes pequenas, lidas em até
+quatro downloads simultâneos e descompactadas diretamente no buffer final.
+O WASM é compilado durante a leitura.
 
 PROGRESSO
 O motor guarda os perfis e as partidas no IndexedDB deste navegador e endereço.
@@ -27,7 +29,8 @@ Apagar os dados do site remove o progresso. O jogo avisa se o navegador só
 permitir uma sessão temporária.
 
 Na primeira abertura, se este navegador tiver um perfil global da antiga
-emulação no mesmo endereço, o site copia users.dat e userN.dat. Isso recupera
+emulação no mesmo endereço, o site copia users.dat e userN.dat da instalação
+com o progresso mais recente. Isso recupera
 nome, fase e desbloqueios. Ondas em andamento da emulação ficam no banco antigo.
 
 DESENVOLVIMENTO LOCAL
@@ -41,8 +44,11 @@ e pode ser executado offline apenas com a biblioteca padrão do Python.
 
 PUBLICAÇÃO
 O workflow em .github/workflows/pages.yml prepara o site no push para main e
-envia dist ao GitHub Pages. Publicar.ps1 refaz o deploy do main remoto com gh.
+envia dist ao GitHub Pages. A última etapa confere a revisão em revision.txt e
+o HTML entregue pelo endereço público. Publicar.ps1 refaz o deploy com gh.
 Execuções: https://github.com/leonardoscheitz/pvz-browser/actions/workflows/pages.yml
+Os testes de compatibilidade ficam em .github/workflows/test-browser.yml.
+Veja os resultados de jogo, saves e desempenho em VALIDACAO.md no repositório.
 
 CRÉDITOS
 Plants vs. Zombies, seus gráficos, áudios e textos pertencem a PopCap Games /

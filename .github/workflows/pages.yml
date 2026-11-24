@@ -20,7 +20,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Preparar o jogo nativo
-        run: python3 scripts/build.py
+        run: |
+          python3 scripts/build.py
+          printf '%s\n' "$GITHUB_SHA" > dist/revision.txt
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
@@ -61,3 +63,19 @@ jobs:
               await new Promise(resolve => setTimeout(resolve, 5000));
             }
             throw new Error('A publicação não terminou em cinco minutos.');
+      - name: Conferir a revisão e a página que o visitante recebe
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          for attempt in {1..12}; do
+            if curl -fsSL --max-time 10 "${PAGE_URL%/}/revision.txt?rev=$GITHUB_SHA" -o "$RUNNER_TEMP/pvz-revision" &&
+               cmp -s dist/revision.txt "$RUNNER_TEMP/pvz-revision" &&
+               curl -fsSL --max-time 10 "${PAGE_URL%/}/?rev=$GITHUB_SHA" -o "$RUNNER_TEMP/pvz-index" &&
+               cmp -s dist/index.html "$RUNNER_TEMP/pvz-index"; then
+              echo "Revisão $GITHUB_SHA disponível em $PAGE_URL"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "O endereço público não entregou a revisão e a página deste build." >&2
+          exit 1
