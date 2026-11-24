@@ -143,6 +143,60 @@ class WebGame(unittest.TestCase):
         self.assertEqual(sun.input_value(), "750")
         self.page.keyboard.press("Escape")
         self.page.wait_for_function("!document.querySelector('#garden-menu').open && Module._gardenState(4) === 0")
+        self.page.set_viewport_size({"width": 844, "height": 390})
+        activate(trigger)
+        card = self.page.locator(".garden-card").bounding_box()
+        self.assertGreater(card["height"], 200)
+        self.assertLessEqual(card["y"] + card["height"], 391)
+        activate(self.page.locator("#garden-relaxed"))
+        self.assertEqual(state(0), 9990)
+        self.assertEqual(state(2), 1)
+        activate(self.page.locator("#garden-normal"))
+        self.assertEqual(state(2), 0)
+        self.assertEqual(state(3), 1)
+        activate(self.page.locator("#garden-back"))
+        self.page.wait_for_function("Module._gardenState(4) === 0")
+
+
+    def test_offline_and_save_tools(self):
+        if not self.touch:
+            self.skipTest("Chromium service-worker and download regression")
+        import json
+        self.create_profile()
+        saved = self.read_file("users.dat")
+        self.page.evaluate("() => new Promise((resolve,reject) => Module.FS.syncfs(false, e => e ? reject(e) : resolve()))")
+        self.page.goto(self.url + "tools.html")
+        with self.page.expect_download() as download:
+            self.page.locator("#save-export").click(timeout=15000)
+        backup = json.loads(Path(download.value.path()).read_text())
+        self.assertEqual(backup["format"], "pvz-browser-goty-backup")
+        import base64
+        self.assertEqual(base64.b64decode(next(row["data"] for row in backup["records"]
+                         if row["path"].endswith("/userdata/users.dat"))), saved)
+        self.page.locator("#save-file").set_input_files({
+            "name": "bad.json", "mimeType": "application/json", "buffer": b'{"version":1}'})
+        self.page.locator("#save-import").click()
+        self.page.get_by_text("Formato de backup incompatível.").wait_for()
+        self.page.locator("#save-file").set_input_files({
+            "name": "valid.json", "mimeType": "application/json", "buffer": json.dumps(backup).encode()})
+        self.page.once("dialog", lambda dialog: dialog.accept())
+        self.page.locator("#save-import").click()
+        self.page.get_by_text("Backup restaurado.", exact=False).wait_for()
+        with self.page.expect_download() as previous:
+            self.page.locator("#save-previous").click()
+        self.assertEqual(json.loads(Path(previous.value.path()).read_text())["records"], backup["records"])
+        self.page.locator("#offline-prepare").click()
+        self.page.get_by_text("Offline preparado.", exact=False).wait_for(timeout=120000)
+        self.page.wait_for_function("navigator.serviceWorker.controller !== null")
+        self.context.set_offline(True)
+        try:
+            self.page.goto(self.url)
+            self.wait_engine()
+            self.assertEqual(self.read_file("users.dat"), saved)
+            self.page.goto(self.url + "tools.html")
+            self.page.locator("#save-export").wait_for()
+        finally:
+            self.context.set_offline(False)
 
     def test_new_profile_and_exclusive_tab(self):
         name = self.create_profile()
