@@ -1,0 +1,41 @@
+name: Testar o GOTY no navegador
+on:
+  push:
+    paths:
+      - 'index.html'
+      - '*.js'
+      - 'scripts/**'
+      - 'vendor/**'
+      - 'modern/pvz-goty.zip'
+      - 'tests/**'
+      - '.github/workflows/test-browser.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  jogo:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { browser: chromium, os: ubuntu-latest }
+          - { browser: firefox, os: ubuntu-latest }
+          - { browser: webkit, os: macos-latest }
+          - { browser: msedge, os: windows-latest }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      PVZ_BROWSER: ${{ matrix.browser }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python scripts/build.py
+      - run: python -m pip install playwright==1.62.0
+      - if: matrix.browser != 'msedge'
+        run: python -m playwright install --with-deps ${{ matrix.browser }}
+      - if: matrix.browser == 'firefox'
+        run: xvfb-run -a python tests/test_browser.py
+      - if: matrix.browser != 'firefox'
+        run: python tests/test_browser.py
