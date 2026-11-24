@@ -1,0 +1,44 @@
+name: Compilar motor do Menu Hack
+on:
+  push:
+    branches: [motor-menu-hack]
+    paths: ['engine/garden.inc', '.github/workflows/garden-engine.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6
+        with:
+          repository: wszqkzqk/PvZ-Portable
+          ref: 2493154028b8542a58bc2caed14fda83b1b7c57e
+          path: upstream
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: emscripten-core/setup-emsdk@v16
+      - name: Compilar o motor com os controles do jardim
+        working-directory: upstream
+        run: |
+          cat ../engine/garden.inc >> src/LawnApp.cpp
+          bash wasm/build-wasm.sh --deps
+          cd build-wasm
+          zip -X ../../vendor/pvz-garden.zip pvz-portable.js pvz-portable.wasm
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pvz-garden
+          path: vendor/pvz-garden.zip
+      - name: Registrar o motor no ramo de compilação
+        if: github.ref == 'refs/heads/motor-menu-hack'
+        run: |
+          sha256sum vendor/pvz-garden.zip | cut -d' ' -f1 > vendor/pvz-garden.sha256
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add vendor/pvz-garden.zip vendor/pvz-garden.sha256
+          git commit -m "Compilar motor GOTY com controles do jardim"
+          git push origin HEAD:motor-menu-hack
