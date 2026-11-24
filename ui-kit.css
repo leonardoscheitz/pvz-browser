@@ -1,6 +1,7 @@
 /* Shared GOTY+ visual language. Image URLs are resolved from the game's archive at build time. */
 :root {
   --pvz-stone: url('{{STONE_BUTTON}}');
+  --pvz-stone-pressed: url('{{STONE_PRESSED}}');
   --pvz-grave: url('{{GRAVE}}');
   --pvz-grave-mask: url('{{GRAVE_MASK}}');
   --pvz-yard: url('{{BACKGROUND}}');
@@ -22,23 +23,39 @@
   cursor: pointer; touch-action: manipulation;
   transition: filter 100ms ease, transform 100ms ease;
 }
-.pvz-stone:active, #garden-menu .pvz-stone:active { transform: translateY(1px); filter: brightness(.82); }
+.pvz-stone:active, #garden-menu .pvz-stone:active { background-image: var(--pvz-stone-pressed); transform: translateY(1px); }
 .pvz-stone:disabled, .pvz-stone[aria-disabled="true"] { filter: saturate(.25) brightness(.72); cursor: not-allowed; }
-.pvz-stone[aria-pressed="true"] { color: #fff2ab; filter: brightness(1.15); }
+.pvz-stone[aria-pressed="true"] { background-image: var(--pvz-stone-pressed); color: #fff2ab; }
 @media (hover:hover) and (pointer:fine) { .pvz-stone:not(:disabled):hover { filter: brightness(1.18); } }
 .pvz-stone:focus-visible, .pvz-panel input:focus-visible, .pvz-panel select:focus-visible {
   outline: 3px solid #f7db88; outline-offset: 2px;
 }
 .pvz-title { font-family: var(--pvz-display); font-weight: 900; color: var(--pvz-gold); text-shadow: 1px 2px 2px #1e171d; }
 .pvz-panel {
-  position: relative; isolation: isolate; padding: 24px;
-  background: linear-gradient(#292a2df0, #25232af5), var(--pvz-grave) center / 180% 180%;
-  border: 4px solid #7b7976; border-radius: 13px 11px 16px 10px;
-  box-shadow: inset 0 0 0 2px #302f34, inset 0 0 0 5px #56545b, 0 6px 0 #111715aa, 0 10px 20px #0006;
-  color: #f2e9cc;
+  position: relative; isolation: isolate; padding: 32px 30px 36px; min-width: 0;
+  color: #fff0c8; text-shadow: 0 1px 1px #241e20;
 }
+.pvz-panel-art {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  display: grid; grid-template: 44px minmax(0,1fr) 44px / 44px minmax(0,1fr) 44px;
+}
+.pvz-panel-art span { background-position: center; background-size: 100% 100%; background-repeat: no-repeat;
+  mask-position: center; mask-size: 100% 100%; mask-repeat: no-repeat; mask-mode: luminance; }
+.pvz-panel-art span:nth-child(1) { background-image: url('{{DIALOG_TOP_LEFT}}'); mask-image: {{DIALOG_TOP_LEFT_MASK}}; }
+.pvz-panel-art span:nth-child(2) { background-image: url('{{DIALOG_TOP_MIDDLE}}'); mask-image: {{DIALOG_TOP_MIDDLE_MASK}}; }
+.pvz-panel-art span:nth-child(3) { background-image: url('{{DIALOG_TOP_RIGHT}}'); mask-image: {{DIALOG_TOP_RIGHT_MASK}}; }
+.pvz-panel-art span:nth-child(4) { background-image: url('{{DIALOG_CENTER_LEFT}}'); mask-image: {{DIALOG_CENTER_LEFT_MASK}}; }
+.pvz-panel-art span:nth-child(5) { background-image: url('{{DIALOG_CENTER_MIDDLE}}'); mask-image: {{DIALOG_CENTER_MIDDLE_MASK}}; }
+.pvz-panel-art span:nth-child(6) { background-image: url('{{DIALOG_CENTER_RIGHT}}'); mask-image: {{DIALOG_CENTER_RIGHT_MASK}}; }
+.pvz-panel-art span:nth-child(7) { background-image: url('{{DIALOG_BOTTOM_LEFT}}'); mask-image: {{DIALOG_BOTTOM_LEFT_MASK}}; }
+.pvz-panel-art span:nth-child(8) { background-image: url('{{DIALOG_BOTTOM_MIDDLE}}'); mask-image: {{DIALOG_BOTTOM_MIDDLE_MASK}}; }
+.pvz-panel-art span:nth-child(9) { background-image: url('{{DIALOG_BOTTOM_RIGHT}}'); mask-image: {{DIALOG_BOTTOM_RIGHT_MASK}}; }
+
 .pvz-panel h2 { margin: 0; }
-.pvz-panel-icon { width: 38px; height: 38px; flex: 0 0 38px; filter: drop-shadow(1px 2px 1px #17151d); }
+.pvz-panel-icon { width: 58px; height: 58px; flex: 0 0 58px; background-position: center; background-size: contain; background-repeat: no-repeat; mask-position: center; mask-size: contain; mask-repeat: no-repeat; mask-mode: luminance; }
+.pvz-panel-icon.sandbox { background-image: url('{{SANDBOX_ART}}'); mask-image: {{SANDBOX_ART_MASK}}; }
+.pvz-panel-icon.offline { background-image: url('{{OFFLINE_ART}}'); mask-image: {{OFFLINE_ART_MASK}}; }
+.pvz-panel-icon.backup { background-image: url('{{BACKUP_ART}}'); mask-image: {{BACKUP_ART_MASK}}; }
 .pvz-panel-heading { display: flex; align-items: center; gap: 10px; margin-bottom: .6rem; }
 .pvz-panel p { margin: .6em 0; }
 .pvz-panel small { color: #dbd3bc; }
@@ -48,7 +65,7 @@
 .pvz-workshop { min-height: 100vh; margin: 0; color: #f2e9cc; font: 16px/1.5 var(--pvz-reading);
   background: #171c18; }
 .pvz-workshop::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background: linear-gradient(#10170eb0, #101611f5), var(--pvz-yard) center / cover no-repeat; }
+  background: var(--pvz-yard) center / cover no-repeat; }
 .pvz-workshop main { width: min(960px, 100%); margin: auto;
   padding: 20px max(16px, env(safe-area-inset-right)) 36px max(16px, env(safe-area-inset-left)); }
 .pvz-workshop header { display: grid; justify-items: center; gap: 8px; text-align: center; margin: 10px 0 24px; }
@@ -61,5 +78,5 @@
 .pvz-workshop [role=status] { color: #e0d2af; font-size: .9rem; }
 .pvz-workshop [hidden] { display: none !important; }
 @media (max-width: 660px) { .pvz-workshop .pvz-grid { grid-template-columns: minmax(0,1fr); }
-  .pvz-panel { padding: 18px; } }
+  .pvz-panel { padding: 28px 22px 30px; } .pvz-panel-art { grid-template: 35px minmax(0,1fr) 35px / 35px minmax(0,1fr) 35px; } }
 @media (prefers-reduced-motion: reduce) { .pvz-stone { transition: none; } }
