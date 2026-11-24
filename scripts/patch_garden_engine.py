@@ -18,5 +18,9 @@ replace_once("void LawnApp::UpdateFrames()\n{",
              "static void GardenTick();\n\nvoid LawnApp::UpdateFrames()\n{")
 replace_once("\t\tSexyApp::UpdateFrames();\n\n\t\tmMusic->MusicUpdate();",
              "\t\tGardenTick();\n\t\tSexyApp::UpdateFrames();\n\n\t\tmMusic->MusicUpdate();")
+replace_once("void LawnApp::Init()\n{",
+             "static void GardenInitializeSandbox(LawnApp* app);\n\nvoid LawnApp::Init()\n{")
+replace_once("\tmMaxExecutions = GetInteger(\"MaxExecutions\", 0);",
+             "\tGardenInitializeSandbox(this);\n\tmMaxExecutions = GetInteger(\"MaxExecutions\", 0);")
 extension = Path(__file__).resolve().parents[1] / "engine" / "garden.inc"
 source.write_text(text + "\n" + extension.read_text(encoding="utf-8"), encoding="utf-8")
