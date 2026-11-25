@@ -182,6 +182,18 @@
           <label class="garden-row" id="garden-infinite-row" hidden>Sol infinito<input type="checkbox" id="garden-infinite"></label>
           <label class="garden-row" id="garden-recharge-row" hidden>Recarga instantânea<input type="checkbox" id="garden-recharge"></label>
           <div class="garden-actions" id="garden-chill-row" hidden><button class="pvz-stone" id="garden-chill" type="button">Retardar zumbis</button></div>
+          <section id="garden-editor" hidden aria-label="Editor do Sandbox" style="grid-column:1/-1">
+            <h2 class="pvz-title">Editor do jardim</h2>
+            <label class="garden-row">Coluna <input id="editor-col" type="number" min="1" max="9" value="1" required inputmode="numeric"></label>
+            <label class="garden-row">Linha <input id="editor-row" type="number" min="1" max="6" value="3" required inputmode="numeric"></label>
+            <label class="garden-row">Planta <select id="editor-seed" style="min-width:0;max-width:65%">
+              <option value="0">Ervilhadora</option><option value="1">Girassol</option>
+              <option value="3">Noz</option><option value="5">Ervilhadora de gelo</option>
+              <option value="7">Repetidora</option><option value="8">Puff-shroom</option>
+              <option value="10">Fume-shroom</option><option value="23">Noz alta</option>
+            </select></label>
+            <div class="garden-actions"><button class="pvz-stone" id="editor-plant" type="button">Invocar</button><button class="pvz-stone" id="editor-remove" type="button">Remover</button></div>
+          </section>
         </div>
         <output aria-live="polite"></output>
         <button class="pvz-stone" id="garden-back" autofocus>Voltar ao jogo</button>
