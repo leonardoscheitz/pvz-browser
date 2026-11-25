@@ -1,7 +1,7 @@
 name: Compilar motor do Menu Hack
 on:
   push:
-    branches: [motor-menu-hack, goty-plus/motor-fase-2, goty-plus/sandbox-unlocked, goty-plus/fusion-native]
+    branches: [motor-menu-hack, goty-plus/motor-fase-2, goty-plus/sandbox-unlocked, goty-plus/fusion-native, goty-plus/fusion-hybrids]
     paths: ['engine/garden.inc', 'scripts/patch_garden_engine.py', '.github/workflows/garden-engine.yml']
   workflow_dispatch:
 permissions:
@@ -35,7 +35,7 @@ jobs:
           name: pvz-garden
           path: vendor/pvz-garden.zip
       - name: Validar catálogo e isolamento do Fusion
-        if: github.ref == 'refs/heads/goty-plus/fusion-native'
+        if: github.ref == 'refs/heads/goty-plus/fusion-native' || github.ref == 'refs/heads/goty-plus/fusion-hybrids'
         env:
           PVZ_REQUIRE_FUSION: '1'
         run: |
