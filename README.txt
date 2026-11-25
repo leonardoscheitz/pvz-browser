@@ -79,6 +79,32 @@ explicitamente suportadas; não executar scripts, APK, EXE ou DLL importados.
 Critério de entrega: compilar WASM, verificar hashes, testar mecânicas reais
 no canvas, isolamento da campanha e visual responsivo; só então publicar.
 
+INTEGRAÇÃO SANDBOX 2.0 + FUSION 0.2
+O Menu Hack do Sandbox oferece um editor por linha e coluna. As 48 espécies
+originais (sem o Imitater, que exige um subtipo) podem ser selecionadas;
+terreno, camadas, upgrades, ocupação e capacidade ainda limitam a invocação.
+Zumbis são invocados em linhas compatíveis, com até 20 por comando, usando
+as animações nativas pré-carregadas. O alvo de zumbi para edição é o mais
+à esquerda na linha selecionada. Vida máxima, intervalo/velocidade e dano
+percentual de disparos e dano em área são editáveis conforme a entidade.
+Regeneração restaura a vida a cada atualização; não evita destruição
+instantânea. Congelar ondas suspende a agenda original; próxima onda
+antecipa a agenda e desativa o congelamento. Esses controles são temporários.
+
+Ferramentas > Mods > Instalar > Jogar Fusion abre uma sessão isolada.
+Dez receitas são implementadas no código, incluindo híbridos solar, congelante
+e blindado, com os dois sentidos de plantio nos três híbridos novos. São
+adaptações, não o fangame original. A arte é uma composição provisória de
+partes originais do GOTY e coloração da animação, sem importar arte externa.
+Identidades híbridas e multiplicadores de dano não são gravados em saves.
+A instalação ativa um módulo incluído; importação de mods arbitrários,
+cenários versionados e rigs exclusivos completos ainda não estão disponíveis.
+
+A PR de integração compila a revisão fixada do PvZ-Portable e executa
+regressões de catálogo, plantio, custo, híbrido solar, isolamento e editor.
+A publicação depende dos resultados reais do CI; não confundir presença
+do código com a disponibilidade do binário no site.
+
 DESENVOLVIMENTO LOCAL
 Com Python 3.9 ou superior, na raiz do repositório:
   python scripts/build.py
