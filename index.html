@@ -115,6 +115,11 @@
     .garden-row > button { flex-shrink: 0; }
     .garden-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     #garden-menu .garden-actions button { white-space: normal; overflow-wrap: anywhere; }
+    #garden-editor { min-width:0; }
+    #garden-editor select { max-width:60%; min-width:0; }
+    #garden-editor > button { width:100%; }
+    #garden-editor h2 { margin-top:.5em; }
+    #editor-wave-status { margin:.2em 0; }
     @container (max-width: 360px) {
       .garden-controls { inset-inline: 12%; }
       .garden-row { gap: .2em; }
@@ -193,6 +198,21 @@
               <option value="10">Fume-shroom</option><option value="23">Noz alta</option>
             </select></label>
             <div class="garden-actions"><button class="pvz-stone" id="editor-plant" type="button">Invocar</button><button class="pvz-stone" id="editor-remove" type="button">Remover</button></div>
+            <h2 class="pvz-title">Zumbis</h2>
+            <label class="garden-row">Tipo <select id="editor-zombie"><option value="0">Normal</option><option value="1">Bandeira</option><option value="2">Cone</option><option value="3">Saltador</option><option value="4">Balde</option><option value="5">Jornal</option><option value="6">Porta</option><option value="7">Futebol</option><option value="11">Mergulhador</option><option value="14">Golfinho</option><option value="16">Balão</option><option value="23">Gargantuar</option></select></label>
+            <label class="garden-row">Quantidade <input id="editor-count" type="number" min="1" max="20" value="1" inputmode="numeric"></label>
+            <button class="pvz-stone" id="editor-spawn-zombie" type="button">Invocar na linha</button>
+            <h2 class="pvz-title">Atributos</h2>
+            <label class="garden-row">Alvo <select id="editor-target"><option value="plant">Planta da célula</option><option value="zombie">Zumbi mais à esquerda</option></select></label>
+            <label class="garden-row">Vida máxima <input id="editor-health" type="number" min="1" max="100000" value="300" inputmode="numeric"></label>
+            <label class="garden-row" id="editor-rate-row"><span id="editor-rate-label">Intervalo de ataque (ticks)</span><input id="editor-rate" type="number" min="80" max="10000" value="150" inputmode="numeric"></label>
+            <div class="garden-actions"><button class="pvz-stone" id="editor-inspect" type="button">Inspecionar</button><button class="pvz-stone" id="editor-apply" type="button">Aplicar</button></div>
+            <h2 class="pvz-title">Ondas</h2>
+            <p id="editor-wave-status" aria-live="polite"></p>
+            <label class="garden-row">Congelar ondas<input id="editor-freeze" type="checkbox"></label>
+            <label class="garden-row">Regenerar plantas<input id="editor-regen" type="checkbox"></label>
+            <button class="pvz-stone" id="editor-next-wave" type="button">Próxima onda</button>
+
           </section>
         </div>
         <output aria-live="polite"></output>
