@@ -128,3 +128,33 @@ app = source.read_text(encoding="utf-8")
 app = patch_hybrid(app, "static void GardenResetModifiers();\n\nvoid LawnApp::KillBoard()\n{\n\tGardenResetModifiers();",
 "static void GardenResetModifiers();\nextern void GardenHybridReset();\n\nvoid LawnApp::KillBoard()\n{\n\tGardenHybridReset();\n\tGardenResetModifiers();")
 source.write_text(app, encoding="utf-8")
+
+# Compose the original game art behind the live animated shooter; no borrowed
+# external sprites. These are provisional native compositions, not new reanim rigs.
+plant = plant_path.read_text(encoding="utf-8")
+anchor = "\t\taOffsetX += mShakeOffsetX;\n\t\taOffsetY += mShakeOffsetY;\n\t\tif (IsInPlay() && mApp->IsIZombieLevel())"
+replacement = """\t\taOffsetX += mShakeOffsetX;
+\t\taOffsetY += mShakeOffsetY;
+        const int hybridKind = GardenHybridKind(this);
+        if (hybridKind == 1 || hybridKind == 3)
+        {
+            Image* part = hybridKind == 1 ? IMAGE_REANIM_SUNFLOWER_HEAD_SING1 : IMAGE_REANIM_WALLNUT_BODY;
+            if (part && part->GetWidth() > 0 && part->GetHeight() > 0)
+            {
+                const float size = hybridKind == 1 ? 64.0f : 72.0f;
+                const float scale = size / std::max(part->GetWidth(), part->GetHeight());
+                int headX = 0, headY = 0;
+                if (hybridKind == 1 && mBodyReanimID != ReanimationID::REANIMATIONID_NULL)
+                    GetPeaHeadOffset(headX, headY);
+                const float centerX = hybridKind == 1 ? aOffsetX + headX + 29.0f : aOffsetX + 39.0f;
+                const float centerY = hybridKind == 1 ? aOffsetY + headY + 18.0f : aOffsetY + 45.0f;
+                PvzpDrawImageScaledF(g, part, centerX - part->GetWidth()*scale/2,
+                    centerY - part->GetHeight()*scale/2, scale, scale);
+            }
+        }
+\t\tif (IsInPlay() && mApp->IsIZombieLevel())"""
+plant = patch_hybrid(plant, anchor, replacement)
+plant = patch_hybrid(plant,
+"\tif (mSeedType == SeedType::SEED_SNOWPEA)\n\t{\n\t\tint aRenderPosition = Board::MakeRenderOrder",
+"\tif (mSeedType == SeedType::SEED_SNOWPEA || GardenHybridKind(this) == 2)\n\t{\n\t\tint aRenderPosition = Board::MakeRenderOrder")
+plant_path.write_text(plant, encoding="utf-8")
