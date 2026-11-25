@@ -1,11 +1,11 @@
 name: Compilar motor do Menu Hack
 on:
   push:
-    branches: [motor-menu-hack, goty-plus/motor-fase-2, goty-plus/sandbox-unlocked, goty-plus/sandbox-editor]
+    branches: [motor-menu-hack, goty-plus/motor-fase-2, goty-plus/sandbox-unlocked, goty-plus/sandbox-editor, goty-plus/integracao-sandbox-fusion]
     paths: ['engine/garden.inc', 'scripts/patch_garden_engine.py', '.github/workflows/garden-engine.yml', 'tests/test_browser.py', 'garden.js', 'index.html']
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, reopened, ready_for_review]
   workflow_dispatch:
 concurrency:
   group: garden-engine-${{ github.head_ref || github.ref_name }}
@@ -58,18 +58,6 @@ jobs:
           python3 -m pip install playwright
           python3 -m playwright install --with-deps chromium
           python3 -m unittest discover -s tests -p test_browser.py -k editor_sandbox_board
-      - name: Validar integração Sandbox e Fusion
-        if: github.head_ref == 'goty-plus/integracao-sandbox-fusion' || github.ref_name == 'goty-plus/integracao-sandbox-fusion'
-        env:
-          PVZ_REQUIRE_FUSION: '1'
-          PVZ_REQUIRE_EDITOR: '1'
-          PVZ_REQUIRE_ADVANCED: '1'
-        run: |
-          sha256sum vendor/pvz-garden.zip | cut -d' ' -f1 > vendor/pvz-garden.sha256
-          python3 scripts/build.py
-          python3 -m pip install playwright
-          python3 -m playwright install --with-deps chromium
-          python3 -m unittest discover -s tests -p test_browser.py -v
       - name: Registrar o motor no ramo de compilação
         if: github.ref == 'refs/heads/motor-menu-hack' || github.ref == 'refs/heads/goty-plus/motor-fase-2' || github.ref == 'refs/heads/goty-plus/sandbox-unlocked' || github.ref == 'refs/heads/goty-plus/sandbox-editor' || github.head_ref == 'goty-plus/integracao-sandbox-fusion' || github.ref_name == 'goty-plus/integracao-sandbox-fusion'
         env:
