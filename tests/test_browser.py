@@ -289,6 +289,21 @@ class WebGame(unittest.TestCase):
                 self.choose(cell % 1024, cell // 1024)
                 self.assertEqual(self.page.evaluate("Module._gardenInspectPlant(0, 2)"), 7 if enabled else 0)
                 self.assertEqual(self.page.evaluate("Module._gardenState(0)"), 100 if enabled else 200)
+                if enabled:
+                    # Real second recipe: plant sunflower, then pea on its cell.
+                    self.page.evaluate("Module._gardenChange(0, 500)")
+                    self.page.wait_for_function("Module._gardenInspectPacket(1) >= 0")
+                    pos = self.page.evaluate("Module._gardenInspectPacket(1)")
+                    self.choose(pos % 1024, pos // 1024)
+                    cell2 = self.page.evaluate("Module._gardenInspectCell(1,2)")
+                    self.choose(cell2 % 1024, cell2 // 1024)
+                    self.assertEqual(self.page.evaluate("Module._gardenInspectPlant(1,2)"), 1)
+                    self.page.wait_for_function("Module._gardenInspectPacket(0) >= 0", timeout=30000)
+                    pick_pea()
+                    self.choose(cell2 % 1024, cell2 // 1024)
+                    self.assertEqual(self.page.evaluate("Module._gardenInspectPlant(1,2)"), 0)
+                    self.assertEqual(self.page.evaluate("Module._gardenInspectHybrid(1,2)"), 1)
+                    self.assertEqual(self.page.evaluate("Module._gardenState(0)"), 350)
 
     def test_fusion_native_isolation(self):
         if not os.environ.get("PVZ_REQUIRE_FUSION"):
