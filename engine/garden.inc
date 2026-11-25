@@ -154,6 +154,23 @@ extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectCell(int col, int row)
            (board->GridToPixelY(col, row) + 40 + board->mY) * 1024;
 }
 
+// Read seed chooser coordinates only after its native input is enabled.
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectChooser(int seed)
+{
+    if (!gardenSandbox || !gLawnApp || gLawnApp->GetDialogCount() ||
+        !gLawnApp->mSeedChooserScreen || !gLawnApp->mBoard) return -1;
+    auto* chooser = gLawnApp->mSeedChooserScreen.get();
+    if (!chooser->mMouseVisible || chooser->mSeedsInFlight ||
+        chooser->mChooseState != SeedChooserState::CHOOSE_NORMAL) return -1;
+    if (seed == -1) return chooser->mSeedsInBank == gLawnApp->mBoard->mSeedBank->mNumPackets ? 1 : 0;
+    if (seed < 0 || seed >= int(SeedType::SEED_IMITATER) ||
+        !gLawnApp->HasSeedType(static_cast<SeedType>(seed))) return -3;
+    auto& card = chooser->mChosenSeeds[seed];
+    if (card.mSeedState == ChosenSeedState::SEED_IN_BANK) return -2;
+    if (card.mSeedState != ChosenSeedState::SEED_IN_CHOOSER) return -3;
+    return card.mX + chooser->mX + 24 + (card.mY + chooser->mY + 30) * 1024;
+}
+
 static void GardenResetModifiers()
 {
     gardenInfiniteSun = false;
