@@ -203,8 +203,8 @@ class WebGame(unittest.TestCase):
             self.skipTest("Visual kit smoke test on Chromium")
         self.page.goto(self.url + "tools.html")
         self.assertTrue(self.page.locator(".pvz-logo").is_visible())
-        self.assertEqual(self.page.locator(".pvz-panel-icon").count(), 3)
-        self.assertEqual(self.page.locator(".pvz-panel-art span").count(), 27)
+        self.assertEqual(self.page.locator(".pvz-panel-icon").count(), 4)
+        self.assertEqual(self.page.locator(".pvz-panel-art span").count(), 36)
         self.assertTrue(self.page.locator("#save-export").is_visible())
         self.assertTrue(self.page.locator("#save-import").is_disabled())
         self.assertTrue(self.page.evaluate("""async () => {
@@ -228,6 +228,31 @@ class WebGame(unittest.TestCase):
                 folder.mkdir(parents=True, exist_ok=True)
                 self.page.screenshot(path=str(folder / f"workshop-{width}x{height}.png"), full_page=True)
 
+    def test_fusion_catalog(self):
+        self.page.goto(self.url + "tools.html#mods")
+        self.assertTrue(self.page.locator("#fusion-play").is_hidden())
+        self.page.locator("#fusion-install").click()
+        self.assertTrue(self.page.locator("#fusion-play").is_visible())
+        self.page.reload()
+        self.assertTrue(self.page.locator("#fusion-play").is_visible())
+        self.page.locator("#fusion-uninstall").click()
+        self.page.reload()
+        self.assertTrue(self.page.locator("#fusion-play").is_hidden())
+
+    def test_fusion_native_isolation(self):
+        if not os.environ.get("PVZ_REQUIRE_FUSION"):
+            self.skipTest("Requires freshly compiled Fusion engine")
+        self.page.goto(self.url + "?sandbox=1&mod=fusion&level=3")
+        self.wait_engine()
+        self.assertEqual(self.page.evaluate("Module._gardenFusionActive()"), 1)
+        self.assertFalse(self.page.evaluate("Module.FS.analyzePath('/pvz-browser-goty').exists"))
+        self.page.goto(self.url + "?sandbox=1")
+        self.wait_engine()
+        self.assertEqual(self.page.evaluate("Module._gardenFusionActive()"), 0)
+        self.page.goto(self.url)
+        self.wait_engine()
+        self.assertEqual(self.page.evaluate("Module._gardenFusionActive()"), 0)
+
     def test_sandbox_never_mounts_campaign(self):
         if os.environ.get("PVZ_BROWSER", "chromium") != "chromium":
             self.skipTest("Sandbox isolation covered on Chromium")
@@ -239,7 +264,7 @@ class WebGame(unittest.TestCase):
         self.page = self.context.new_page()
         self.page.goto(self.url + "?sandbox=1")
         self.wait_engine()
-        self.assertTrue(self.page.locator("#sandbox-indicator").is_visible())
+        self.assertTrue(self.page.locator("body.sandbox-session").count())
         self.assertFalse(self.page.evaluate("Module.FS.analyzePath('/pvz-browser-goty').exists"))
         self.assertTrue(self.page.evaluate("Module.FS.analyzePath('/saves/userdata/users.dat').exists"))
         self.assertNotEqual(before, self.read_file("users.dat"))
