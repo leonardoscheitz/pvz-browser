@@ -171,7 +171,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectChooser(int seed)
     return card.mX + chooser->mX + 24 + (card.mY + chooser->mY + 30) * 1024;
 }
 
-// Sandbox 2.0: explicit grid editing, limited to ordinary single-cell plants.
+// Sandbox 2.0: grid editing with native terrain, layer and upgrade validation.
 extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorAvailable()
 {
     Board* board = GardenBoard();
@@ -179,22 +179,54 @@ extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorAvailable()
         !gLawnApp->IsWallnutBowlingLevel() && !board->HasLevelAwardDropped();
 }
 
+// Native planting checks, including the layered cells and upgrade bases.
 extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorPlant(int col, int row, int seed)
 {
     if (!gardenEditorAvailable() || col < 0 || col >= MAX_GRID_SIZE_X ||
-        row < 0 || row >= MAX_GRID_SIZE_Y) return 0;
+        row < 0 || row >= MAX_GRID_SIZE_Y || seed < 0 || seed >= int(SeedType::SEED_IMITATER)) return 0;
     Board* board = GardenBoard();
+    if (board->mPlants.mSize >= board->mPlants.mMaxSize - 1) return 0;
     const SeedType type = static_cast<SeedType>(seed);
-    switch (type) {
-        case SeedType::SEED_PEASHOOTER: case SeedType::SEED_SUNFLOWER:
-        case SeedType::SEED_WALLNUT: case SeedType::SEED_SNOWPEA:
-        case SeedType::SEED_REPEATER: case SeedType::SEED_PUFFSHROOM:
-        case SeedType::SEED_FUMESHROOM: case SeedType::SEED_TALLNUT: break;
-        default: return 0;
+    if (board->CanPlantAt(col, row, type) != PlantingReason::PLANTING_OK) return 0;
+    auto* normal = board->GetTopPlantAt(col,row,PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION);
+    auto* under = board->GetTopPlantAt(col,row,PlantPriority::TOPPLANT_ONLY_UNDER_PLANT);
+    auto* pumpkin = board->GetTopPlantAt(col,row,PlantPriority::TOPPLANT_ONLY_PUMPKIN);
+    auto* flying = board->GetTopPlantAt(col,row,PlantPriority::TOPPLANT_ONLY_FLYING);
+    Plant* replace = nullptr;
+    Plant* right = nullptr;
+    bool awake = false;
+    int wake = 0;
+    if (type == SeedType::SEED_CATTAIL) {
+        if (normal || !under || !under->IsUpgradableTo(type)) return 0;
+        replace = under;
+    } else if (type == SeedType::SEED_COBCANNON) {
+        if (col+1 >= MAX_GRID_SIZE_X || !normal || normal->mSeedType != SeedType::SEED_KERNELPULT ||
+            !board->IsValidCobCannonSpot(col,row)) return 0;
+        right = board->GetTopPlantAt(col+1,row,PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION);
+        if (!right || right->mSeedType != SeedType::SEED_KERNELPULT) return 0;
+        replace = normal;
+    } else if (Plant::IsUpgrade(type)) {
+        if (!normal || !normal->IsUpgradableTo(type)) return 0;
+        replace = normal;
+    } else if (type == SeedType::SEED_PUMPKINSHELL) {
+        if (pumpkin) return 0;
+    } else if (type == SeedType::SEED_FLOWERPOT || type == SeedType::SEED_LILYPAD) {
+        if (normal || under || pumpkin) return 0;
+    } else if (Plant::IsFlying(type)) {
+        if (flying) return 0;
+    } else if (normal) return 0;
+    if ((replace && replace->mOnBungeeState != PlantOnBungeeState::NOT_ON_BUNGEE) ||
+        (right && right->mOnBungeeState != PlantOnBungeeState::NOT_ON_BUNGEE)) return 0;
+    if (replace && type == SeedType::SEED_GLOOMSHROOM) {
+        awake = !replace->mIsAsleep; wake = replace->mWakeUpCounter;
     }
-    if (board->GetTopPlantAt(col, row, PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION) ||
-        board->CanPlantAt(col, row, type) != PlantingReason::PLANTING_OK) return 0;
-    board->AddPlant(col, row, type, SeedType::SEED_NONE);
+    Plant::PreloadPlantResources(type);
+    if (replace) replace->Die();
+    if (right) right->Die();
+    auto* plant = board->AddPlant(col,row,type,SeedType::SEED_NONE);
+    if (type == SeedType::SEED_GLOOMSHROOM) {
+        if (awake) plant->SetSleeping(false); else plant->mWakeUpCounter = wake;
+    }
     return 1;
 }
 
@@ -202,8 +234,10 @@ extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorRemove(int col, int row)
 {
     if (!gardenEditorAvailable() || col < 0 || col >= MAX_GRID_SIZE_X ||
         row < 0 || row >= MAX_GRID_SIZE_Y) return 0;
-    Plant* plant = GardenBoard()->GetTopPlantAt(col, row, PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION);
-    if (!plant || plant->mDead || plant->mSeedType == SeedType::SEED_COBCANNON ||
+    Board* board = GardenBoard();
+    Plant* plant = board->GetTopPlantAt(col,row,PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION);
+    if (!plant) plant = board->GetTopPlantAt(col,row,PlantPriority::TOPPLANT_ANY);
+    if (!plant || plant->mDead ||
         plant->mOnBungeeState != PlantOnBungeeState::NOT_ON_BUNGEE) return 0;
     plant->Die();
     return 1;
@@ -256,6 +290,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorSpawnZombie(int row, int type, i
     }
     Board* board = GardenBoard();
     if (!board->RowCanHaveZombieType(row, zombieType)) return 0;
+    Zombie::PreloadZombieResources(zombieType);
     int spawned = 0;
     for (; spawned < count; ++spawned)
         if (!board->AddZombieInRow(zombieType, row, Zombie::ZOMBIE_WAVE_DEBUG)) break;
@@ -289,6 +324,12 @@ extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorPlantState(int col, int row, int
         case 4: { const auto i = gardenDamagePercent.find(p); return i == gardenDamagePercent.end() ? 100 : i->second; }
         default: return -1;
     }
+}
+extern int GardenHybridKind(const Plant*);
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectHybrid(int col, int row)
+{
+    Plant* p = GardenEditorSelectedPlant(col,row);
+    return p ? GardenHybridKind(p) : -1;
 }
 extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorPlantAttribute(int col, int row, int field, int value)
 {
