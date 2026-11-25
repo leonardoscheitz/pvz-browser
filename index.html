@@ -38,7 +38,9 @@
     button:focus-visible { outline: 3px solid white; outline-offset: 3px; }
     #notice { position: absolute; top: .6rem; left: 50%; transform: translateX(-50%); width: max-content;
       max-width: 94%; padding: .45rem .7rem; border-radius: .3rem; background: #262114f2; font-size: .85rem; }
-    #notice button { margin-left: .5rem; padding: .1rem .45rem; }
+    #notice { pointer-events: none; }
+    #notice button { pointer-events: auto; margin-left: .5rem; padding: .1rem .45rem; }
+    body.sandbox-session #notice { top: auto; bottom: 3.5rem; }
     .sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     #garden-trigger, #garden-menu button { font-family: var(--pvz-display); font-weight: 900; }
     #garden-trigger { position: absolute; bottom: 1%; left: 1%; background: url('{{STONE_BUTTON}}') center / 100% 100%;
@@ -115,6 +117,11 @@
     .garden-row > button { flex-shrink: 0; }
     .garden-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     #garden-menu .garden-actions button { white-space: normal; overflow-wrap: anywhere; }
+    #garden-editor { min-width:0; }
+    #garden-editor select { max-width:60%; min-width:0; }
+    #garden-editor > button { width:100%; }
+    #garden-editor h2 { margin-top:.5em; }
+    #editor-wave-status { margin:.2em 0; }
     @container (max-width: 360px) {
       .garden-controls { inset-inline: 12%; }
       .garden-row { gap: .2em; }
@@ -182,6 +189,36 @@
           <label class="garden-row" id="garden-infinite-row" hidden>Sol infinito<input type="checkbox" id="garden-infinite"></label>
           <label class="garden-row" id="garden-recharge-row" hidden>Recarga instantânea<input type="checkbox" id="garden-recharge"></label>
           <div class="garden-actions" id="garden-chill-row" hidden><button class="pvz-stone" id="garden-chill" type="button">Retardar zumbis</button></div>
+          <section id="garden-editor" hidden aria-label="Editor do Sandbox" style="grid-column:1/-1">
+            <h2 class="pvz-title">Sandbox 2.0</h2><small>Escolha a célula. Terreno, camadas e bases de melhorias seguem as regras originais.</small>
+            <label class="garden-row">Coluna <input id="editor-col" type="number" min="1" max="9" value="1" required inputmode="numeric"></label>
+            <label class="garden-row">Linha <input id="editor-row" type="number" min="1" max="6" value="3" required inputmode="numeric"></label>
+            <label class="garden-row">Planta <select id="editor-seed" style="min-width:0;max-width:65%">
+              <optgroup label="Dia"><option value="0">Ervilhadora</option><option value="1">Girassol</option><option value="2">Bomba-cereja</option><option value="3">Noz</option><option value="4">Mina de batata</option><option value="5">Ervilhadora de gelo</option><option value="6">Carnívora</option><option value="7">Repetidora</option></optgroup>
+              <optgroup label="Noite"><option value="8">Puff-shroom</option><option value="9">Sun-shroom</option><option value="10">Fume-shroom</option><option value="11">Grave Buster</option><option value="12">Hypno-shroom</option><option value="13">Scaredy-shroom</option><option value="14">Ice-shroom</option><option value="15">Doom-shroom</option></optgroup>
+              <optgroup label="Piscina"><option value="16">Vitória-régia</option><option value="17">Squash</option><option value="18">Threepeater</option><option value="19">Tangle Kelp</option><option value="20">Jalapeño</option><option value="21">Spikeweed</option><option value="22">Torchwood</option><option value="23">Noz alta</option></optgroup>
+              <optgroup label="Neblina"><option value="24">Sea-shroom</option><option value="25">Plantern</option><option value="26">Cacto</option><option value="27">Blover</option><option value="28">Split Pea</option><option value="29">Starfruit</option><option value="30">Abóbora</option><option value="31">Magnet-shroom</option></optgroup>
+              <optgroup label="Telhado"><option value="32">Cabbage-pult</option><option value="33">Vaso</option><option value="34">Kernel-pult</option><option value="35">Grão de café</option><option value="36">Alho</option><option value="37">Umbrella Leaf</option><option value="38">Marigold</option><option value="39">Melon-pult</option></optgroup>
+              <optgroup label="Melhorias"><option value="40">Gatling Pea</option><option value="41">Girassol duplo</option><option value="42">Gloom-shroom</option><option value="43">Cattail</option><option value="44">Winter Melon</option><option value="45">Gold Magnet</option><option value="46">Spikerock</option><option value="47">Cob Cannon</option></optgroup>
+            </select></label>
+            <div class="garden-actions"><button class="pvz-stone" id="editor-plant" type="button">Invocar</button><button class="pvz-stone" id="editor-remove" type="button">Remover</button></div>
+            <h2 class="pvz-title">Zumbis</h2>
+            <label class="garden-row">Tipo <select id="editor-zombie"><option value="0">Normal</option><option value="1">Bandeira</option><option value="2">Cone</option><option value="3">Saltador</option><option value="4">Balde</option><option value="5">Jornal</option><option value="6">Porta</option><option value="7">Futebol</option><option value="11">Mergulhador</option><option value="14">Golfinho</option><option value="16">Balão</option><option value="23">Gargantuar</option></select></label>
+            <label class="garden-row">Quantidade <input id="editor-count" type="number" min="1" max="20" value="1" inputmode="numeric"></label>
+            <button class="pvz-stone" id="editor-spawn-zombie" type="button">Invocar na linha</button>
+            <h2 class="pvz-title">Atributos</h2>
+            <label class="garden-row">Alvo <select id="editor-target"><option value="plant">Planta da célula</option><option value="zombie">Zumbi mais à esquerda</option></select></label>
+            <label class="garden-row">Vida máxima <input id="editor-health" type="number" min="1" max="100000" value="300" inputmode="numeric"></label>
+            <label class="garden-row" id="editor-rate-row"><span id="editor-rate-label">Intervalo de ataque (ticks)</span><input id="editor-rate" type="number" min="80" max="10000" value="150" inputmode="numeric"></label>
+            <label class="garden-row" id="editor-damage-row">Dano (%) <input id="editor-damage" type="number" min="10" max="1000" value="100" inputmode="numeric"></label>
+            <div class="garden-actions"><button class="pvz-stone" id="editor-inspect" type="button">Inspecionar</button><button class="pvz-stone" id="editor-apply" type="button">Aplicar</button></div>
+            <h2 class="pvz-title">Ondas</h2>
+            <p id="editor-wave-status" aria-live="polite"></p>
+            <label class="garden-row">Congelar ondas<input id="editor-freeze" type="checkbox"></label>
+            <label class="garden-row">Regenerar plantas<input id="editor-regen" type="checkbox"></label>
+            <button class="pvz-stone" id="editor-next-wave" type="button">Próxima onda</button>
+
+          </section>
         </div>
         <output aria-live="polite"></output>
         <button class="pvz-stone" id="garden-back" autofocus>Voltar ao jogo</button>

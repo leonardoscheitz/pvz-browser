@@ -8,6 +8,20 @@
 static bool gardenSandbox = false;
 static int gardenSandboxStartLevel = 1;
 
+static bool gardenFusion = false;
+
+// Only the isolated mod session may activate this feature, before the engine starts.
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenFusionEnable()
+{
+    if (gLawnApp || !gardenSandbox) return 0;
+    gardenFusion = true;
+    return 1;
+}
+
+bool GardenFusionEnabled() { return gardenSandbox && gardenFusion; }
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenFusionActive() { return GardenFusionEnabled() ? 1 : 0; }
+
+
 extern "C" EMSCRIPTEN_KEEPALIVE int gardenSandboxEnable(int level)
 {
     if (gLawnApp || level < 1 || level > 50) return 0;
@@ -106,8 +120,302 @@ static bool GardenAdvancedAvailable(Board* board)
         !board->HasConveyorBeltSeedBank() && !gLawnApp->IsSlotMachineLevel();
 }
 
+// Read-only sandbox diagnostics for browser regression tests and future editors.
+// Returns the native seed at a cell, or -1 when empty/unavailable.
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectPlant(int col, int row)
+{
+    Board* board = GardenBoard();
+    if (!gardenSandbox || !GardenAdvancedAvailable(board) ||
+        col < 0 || col >= MAX_GRID_SIZE_X || row < 0 || row >= MAX_GRID_SIZE_Y)
+        return -1;
+    Plant* plant = board->GetTopPlantAt(col, row, PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION);
+    return plant && !plant->mDead ? int(plant->mSeedType) : -1;
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectPacket(int seed)
+{
+    Board* board = GardenBoard();
+    if (!gardenSandbox || !GardenAdvancedAvailable(board) || !board->mSeedBank) return -1;
+    for (int i = 0; i < board->mSeedBank->mNumPackets; ++i) {
+        SeedPacket& packet = board->mSeedBank->mSeedPackets[i];
+        if (int(packet.mPacketType) == seed && packet.CanPickUp())
+            return (packet.mX + packet.mOffsetX + packet.mWidth / 2 + board->mSeedBank->mX + board->mX) +
+                   (packet.mY + packet.mHeight / 2 + board->mSeedBank->mY + board->mY) * 1024;
+    }
+    return -1;
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectCell(int col, int row)
+{
+    Board* board = GardenBoard();
+    if (!gardenSandbox || !GardenAdvancedAvailable(board) ||
+        col < 0 || col >= MAX_GRID_SIZE_X || row < 0 || row >= MAX_GRID_SIZE_Y) return -1;
+    return board->GridToPixelX(col, row) + 40 + board->mX +
+           (board->GridToPixelY(col, row) + 40 + board->mY) * 1024;
+}
+
+// Read seed chooser coordinates only after its native input is enabled.
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectChooser(int seed)
+{
+    if (!gardenSandbox || !gLawnApp || gLawnApp->GetDialogCount() ||
+        !gLawnApp->mSeedChooserScreen || !gLawnApp->mBoard) return -1;
+    auto* chooser = gLawnApp->mSeedChooserScreen.get();
+    if (!chooser->mMouseVisible || chooser->mSeedsInFlight ||
+        chooser->mChooseState != SeedChooserState::CHOOSE_NORMAL) return -1;
+    if (seed == -1) return chooser->mSeedsInBank == gLawnApp->mBoard->mSeedBank->mNumPackets ? 1 : 0;
+    if (seed < 0 || seed >= int(SeedType::SEED_IMITATER) ||
+        !gLawnApp->HasSeedType(static_cast<SeedType>(seed))) return -3;
+    auto& card = chooser->mChosenSeeds[seed];
+    if (card.mSeedState == ChosenSeedState::SEED_IN_BANK) return -2;
+    if (card.mSeedState != ChosenSeedState::SEED_IN_CHOOSER) return -3;
+    return card.mX + chooser->mX + 24 + (card.mY + chooser->mY + 30) * 1024;
+}
+
+// Sandbox 2.0: grid editing with native terrain, layer and upgrade validation.
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorAvailable()
+{
+    Board* board = GardenBoard();
+    return gardenSandbox && GardenAdvancedAvailable(board) &&
+        !gLawnApp->IsWallnutBowlingLevel() && !board->HasLevelAwardDropped();
+}
+
+// Native planting checks, including the layered cells and upgrade bases.
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorPlant(int col, int row, int seed)
+{
+    if (!gardenEditorAvailable() || col < 0 || col >= MAX_GRID_SIZE_X ||
+        row < 0 || row >= MAX_GRID_SIZE_Y || seed < 0 || seed >= int(SeedType::SEED_IMITATER)) return 0;
+    Board* board = GardenBoard();
+    if (board->mPlants.mSize >= board->mPlants.mMaxSize - 1) return 0;
+    const SeedType type = static_cast<SeedType>(seed);
+    if (board->CanPlantAt(col, row, type) != PlantingReason::PLANTING_OK) return 0;
+    auto* normal = board->GetTopPlantAt(col,row,PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION);
+    auto* under = board->GetTopPlantAt(col,row,PlantPriority::TOPPLANT_ONLY_UNDER_PLANT);
+    auto* pumpkin = board->GetTopPlantAt(col,row,PlantPriority::TOPPLANT_ONLY_PUMPKIN);
+    auto* flying = board->GetTopPlantAt(col,row,PlantPriority::TOPPLANT_ONLY_FLYING);
+    Plant* replace = nullptr;
+    Plant* right = nullptr;
+    bool awake = false;
+    int wake = 0;
+    if (type == SeedType::SEED_CATTAIL) {
+        if (normal || !under || !under->IsUpgradableTo(type)) return 0;
+        replace = under;
+    } else if (type == SeedType::SEED_COBCANNON) {
+        if (col+1 >= MAX_GRID_SIZE_X || !normal || normal->mSeedType != SeedType::SEED_KERNELPULT ||
+            !board->IsValidCobCannonSpot(col,row)) return 0;
+        right = board->GetTopPlantAt(col+1,row,PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION);
+        if (!right || right->mSeedType != SeedType::SEED_KERNELPULT) return 0;
+        replace = normal;
+    } else if (Plant::IsUpgrade(type)) {
+        if (!normal || !normal->IsUpgradableTo(type)) return 0;
+        replace = normal;
+    } else if (type == SeedType::SEED_PUMPKINSHELL) {
+        if (pumpkin) return 0;
+    } else if (type == SeedType::SEED_FLOWERPOT || type == SeedType::SEED_LILYPAD) {
+        if (normal || under || pumpkin) return 0;
+    } else if (Plant::IsFlying(type)) {
+        if (flying) return 0;
+    } else if (normal) return 0;
+    if ((replace && replace->mOnBungeeState != PlantOnBungeeState::NOT_ON_BUNGEE) ||
+        (right && right->mOnBungeeState != PlantOnBungeeState::NOT_ON_BUNGEE)) return 0;
+    if (replace && type == SeedType::SEED_GLOOMSHROOM) {
+        awake = !replace->mIsAsleep; wake = replace->mWakeUpCounter;
+    }
+    Plant::PreloadPlantResources(type);
+    if (replace) replace->Die();
+    if (right) right->Die();
+    auto* plant = board->AddPlant(col,row,type,SeedType::SEED_NONE);
+    if (type == SeedType::SEED_GLOOMSHROOM) {
+        if (awake) plant->SetSleeping(false); else plant->mWakeUpCounter = wake;
+    }
+    return 1;
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorRemove(int col, int row)
+{
+    if (!gardenEditorAvailable() || col < 0 || col >= MAX_GRID_SIZE_X ||
+        row < 0 || row >= MAX_GRID_SIZE_Y) return 0;
+    Board* board = GardenBoard();
+    Plant* plant = board->GetTopPlantAt(col,row,PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION);
+    if (!plant) plant = board->GetTopPlantAt(col,row,PlantPriority::TOPPLANT_ANY);
+    if (!plant || plant->mDead ||
+        plant->mOnBungeeState != PlantOnBungeeState::NOT_ON_BUNGEE) return 0;
+    plant->Die();
+    return 1;
+}
+
+// Temporary editor controls; never mutate the serialized structure of entities.
+// Damage overrides are transient side tables, not part of native save layouts.
+#include <unordered_map>
+static std::unordered_map<const Plant*, int> gardenDamagePercent;
+static std::unordered_map<const Projectile*, int> gardenShotPercent;
+void GardenForgetPlant(const Plant* p) { gardenDamagePercent.erase(p); }
+void GardenForgetShot(const Projectile* p) { gardenShotPercent.erase(p); }
+int GardenPlantDamage(const Plant* p, int base)
+{
+    const auto i = gardenDamagePercent.find(p);
+    return i == gardenDamagePercent.end() ? base : std::clamp(base * i->second / 100, 1, 100000);
+}
+void GardenRegisterShot(const Plant* p, const Projectile* shot)
+{
+    const auto i = gardenDamagePercent.find(p);
+    if (i != gardenDamagePercent.end()) gardenShotPercent.insert_or_assign(shot, i->second);
+}
+int GardenShotDamage(const Projectile* p, int base)
+{
+    const auto i = gardenShotPercent.find(p);
+    return i == gardenShotPercent.end() ? base : std::clamp(base * i->second / 100, 1, 100000);
+}
+
+static bool gardenFreezeWaves = false;
+static bool gardenRegenerate = false;
+
+bool GardenEditorWavesFrozen()
+{
+    return gardenFreezeWaves && gardenEditorAvailable();
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorSpawnZombie(int row, int type, int count)
+{
+    if (!gardenEditorAvailable() || row < 0 || row >= MAX_GRID_SIZE_Y || count < 1 || count > 20)
+        return 0;
+    const auto zombieType = static_cast<ZombieType>(type);
+    switch (zombieType) {
+        case ZombieType::ZOMBIE_NORMAL: case ZombieType::ZOMBIE_FLAG:
+        case ZombieType::ZOMBIE_TRAFFIC_CONE: case ZombieType::ZOMBIE_POLEVAULTER:
+        case ZombieType::ZOMBIE_PAIL: case ZombieType::ZOMBIE_NEWSPAPER:
+        case ZombieType::ZOMBIE_DOOR: case ZombieType::ZOMBIE_FOOTBALL:
+        case ZombieType::ZOMBIE_SNORKEL: case ZombieType::ZOMBIE_DOLPHIN_RIDER:
+        case ZombieType::ZOMBIE_BALLOON: case ZombieType::ZOMBIE_GARGANTUAR: break;
+        default: return 0;
+    }
+    Board* board = GardenBoard();
+    if (!board->RowCanHaveZombieType(row, zombieType)) return 0;
+    Zombie::PreloadZombieResources(zombieType);
+    int spawned = 0;
+    for (; spawned < count; ++spawned)
+        if (!board->AddZombieInRow(zombieType, row, Zombie::ZOMBIE_WAVE_DEBUG)) break;
+    return spawned;
+}
+
+static Plant* GardenEditorSelectedPlant(int col, int row)
+{
+    if (!gardenEditorAvailable() || col < 0 || col >= MAX_GRID_SIZE_X || row < 0 || row >= MAX_GRID_SIZE_Y) return nullptr;
+    auto* p = GardenBoard()->GetTopPlantAt(col, row, PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION);
+    return p && !p->mDead && p->mPlantHealth > 0 && p->mOnBungeeState == PlantOnBungeeState::NOT_ON_BUNGEE ? p : nullptr;
+}
+static Zombie* GardenEditorSelectedZombie(int row)
+{
+    if (!gardenEditorAvailable() || row < 0 || row >= MAX_GRID_SIZE_Y) return nullptr;
+    Zombie* selected = nullptr;
+    for (Zombie* z : GardenBoard()->mZombies)
+        if (z->mRow == row && !z->mDead && !z->IsDeadOrDying() && z->mBodyHealth > 0 &&
+            (!selected || z->mPosX < selected->mPosX)) selected = z;
+    return selected;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorPlantState(int col, int row, int field)
+{
+    Plant* p = GardenEditorSelectedPlant(col,row);
+    if (!p) return -1;
+    switch (field) {
+        case 0: return int(p->mSeedType);
+        case 1: return p->mPlantHealth;
+        case 2: return p->mPlantMaxHealth;
+        case 3: return p->mLaunchRate;
+        case 4: { const auto i = gardenDamagePercent.find(p); return i == gardenDamagePercent.end() ? 100 : i->second; }
+        default: return -1;
+    }
+}
+extern int GardenHybridKind(const Plant*);
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectHybrid(int col, int row)
+{
+    Plant* p = GardenEditorSelectedPlant(col,row);
+    return p ? GardenHybridKind(p) : -1;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorPlantAttribute(int col, int row, int field, int value)
+{
+    Plant* p = GardenEditorSelectedPlant(col,row);
+    if (!p) return 0;
+    if (field == 1 && value >= 1 && value <= 100000) {
+        p->mPlantHealth = value;
+        p->mPlantMaxHealth = value;
+        return 1;
+    }
+    if (field == 4 && value >= 10 && value <= 1000 && p->mLaunchRate > 0) {
+        gardenDamagePercent.insert_or_assign(p, value); return 1;
+    }
+    if (field == 3 && value >= 80 && value <= 10000 && p->mLaunchRate > 0) {
+        p->mLaunchRate = value;
+        p->mLaunchCounter = std::min(p->mLaunchCounter, value);
+        return 1;
+    }
+    return 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorZombieState(int row, int field)
+{
+    Zombie* z = GardenEditorSelectedZombie(row);
+    if (!z) return -1;
+    switch (field) {
+        case 0: return int(z->mZombieType);
+        case 1: return z->mBodyHealth;
+        case 2: return z->mBodyMaxHealth;
+        case 3: return int(z->mVelX * 1000.0f);
+        default: return -1;
+    }
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorZombieAttribute(int row, int field, int value)
+{
+    Zombie* z = GardenEditorSelectedZombie(row);
+    if (!z) return 0;
+    if (field == 1 && value >= 1 && value <= 100000) {
+        z->mBodyHealth = value; z->mBodyMaxHealth = value; return 1;
+    }
+    if (field == 3 && value >= 50 && value <= 3000) {
+        z->mVelX = value / 1000.0f; return 1;
+    }
+    return 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorChooser(int seed)
+{
+    if (!gardenSandbox || !gLawnApp || gLawnApp->GetDialogCount() ||
+        !gLawnApp->mSeedChooserScreen || !gLawnApp->mBoard) return -1;
+    auto* chooser = gLawnApp->mSeedChooserScreen.get();
+    if (!chooser->mMouseVisible || chooser->mSeedsInFlight ||
+        chooser->mChooseState != SeedChooserState::CHOOSE_NORMAL) return -1;
+    if (seed == -1) return chooser->mSeedsInBank == gLawnApp->mBoard->mSeedBank->mNumPackets ? 1 : 0;
+    if (seed < 0 || seed >= int(SeedType::SEED_IMITATER) ||
+        !gLawnApp->HasSeedType(static_cast<SeedType>(seed))) return -3;
+    auto& card = chooser->mChosenSeeds[seed];
+    if (card.mSeedState != ChosenSeedState::SEED_IN_CHOOSER) return -2;
+    return card.mX + chooser->mX + 24 + (card.mY + chooser->mY + 30) * 1024;
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorWave(int action, int value)
+{
+    if (!gardenEditorAvailable()) return -1;
+    Board* board = GardenBoard();
+    switch (action) {
+        case 0: return board->mCurrentWave;
+        case 1: return board->mNumWaves;
+        case 2: gardenFreezeWaves = value != 0; return 1;
+        case 3:
+            if (board->mCurrentWave >= board->mNumWaves) return 0;
+            gardenFreezeWaves = false;
+            if (board->mHugeWaveCountDown > 0) board->mHugeWaveCountDown = 1;
+            else if (board->mZombieCountDown > 6) board->mZombieCountDown = 6;
+            return 1;
+        case 4: return int(gardenFreezeWaves);
+        case 5: gardenRegenerate = value != 0; return 1;
+        case 6: return int(gardenRegenerate);
+        default: return -1;
+    }
+}
+
 static void GardenResetModifiers()
 {
+    gardenDamagePercent.clear();
+    gardenShotPercent.clear();
+    gardenFreezeWaves = false;
+    gardenRegenerate = false;
     gardenInfiniteSun = false;
     gardenInstantRecharge = false;
     if (gardenTouchedFree) gLawnApp->mEasyPlantingCheat = false;
@@ -121,9 +429,11 @@ static void GardenResetModifiers()
 
 static void GardenTick()
 {
-    if (!gardenInfiniteSun && !gardenInstantRecharge) return;
+    if (!gardenInfiniteSun && !gardenInstantRecharge && !gardenRegenerate) return;
     Board* board = GardenBoard();
     if (!GardenAdvancedAvailable(board) || board->mPaused) return;
+    if (gardenRegenerate && gardenEditorAvailable())
+        for (Plant* p : board->mPlants) if (!p->mDead && p->mPlantHealth > 0) p->mPlantHealth = p->mPlantMaxHealth;
     if (gardenInfiniteSun) board->mSunMoney = 9990;
     if (gardenInstantRecharge && board->mSeedBank) board->mSeedBank->RefreshAllPackets();
 }

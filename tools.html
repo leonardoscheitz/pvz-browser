@@ -16,6 +16,18 @@
 <p>Seu próprio jardim de experiências. Use o Menu Hack sem afetar a campanha.</p>
 <p><a class="pvz-stone primary" href="./?sandbox=1">Abrir Sandbox</a></p>
 <small>Perfil temporário com modos e plantas desbloqueados. No menu principal do Sandbox, use Escolher fase para jogar qualquer um dos 50 níveis do Adventure. Cenários personalizados e invocação ainda em desenvolvimento.</small></section>
+<section class="pvz-panel"><div class="pvz-panel-art" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><div class="pvz-panel-heading"><span class="pvz-panel-icon offline" aria-hidden="true"></span><h2 class="pvz-title" id="mods">Mods</h2></div>
+<p><strong>Fusion nativo · 0.2 experimental</strong></p>
+<p>Combine plantas no Adventure, usando gráficos e animações do GOTY. A sessão é temporária e não altera os saves da campanha.</p>
+<div class="backup-actions"><button class="pvz-stone" id="fusion-install" type="button">Instalar</button><button class="pvz-stone" id="fusion-uninstall" type="button" hidden>Desinstalar</button><a class="pvz-stone primary" id="fusion-play" href="./?sandbox=1&amp;mod=fusion&amp;level=3" hidden>Jogar Fusion</a></div>
+<p id="fusion-status" role="status"></p>
+<small>O módulo vem incluído no motor; instalar ativa o acesso neste navegador.</small>
+<h3 class="pvz-title">Receitas</h3><p>Plante a segunda semente sobre a primeira no mesmo quadrado. Custo e recarga normais.</p>
+<ul><li>Ervilhadora + Ervilhadora → Repetidora</li><li>Repetidora + Repetidora → Metralhadora de ervilhas</li><li>Girassol + Girassol → Girassol duplo</li><li>Noz + Noz → Noz alta</li><li>Cogumelo fumacento + Cogumelo fumacento → Gloom-shroom</li><li>Espinheiro + Espinheiro → Espinheiro de pedra</li><li>Melão-pulta + Ervilhadora de gelo → Melão de gelo (nessa ordem)</li></ul>
+<h3 class="pvz-title">Híbridos experimentais</h3>
+<ul><li>Ervilhadora + Girassol → Ervilhadora Solar: dispara e produz sol periodicamente.</li><li>Repetidora + Ervilhadora de gelo → Repetidora Congelante: dois projéteis de gelo por ciclo.</li><li>Ervilhadora + Noz → Noz Atiradora: dispara e tem 4.000 pontos de vida.</li></ul>
+<p>As três receitas aceitam os dois sentidos. As plantas usam composição de peças e animações originais do GOTY, ainda provisória. Habilidades e identidades temporárias são descartadas ao destruir o tabuleiro; não há retomada de híbridos salvos nesta versão.</p><small>Receitas adaptadas; não é a distribuição oficial do fangame. Fases especiais e esteiras não têm fusões nesta versão.</small>
+</section>
 <section class="pvz-panel"><div class="pvz-panel-art" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><div class="pvz-panel-heading"><span class="pvz-panel-icon offline" aria-hidden="true"></span><h2 class="pvz-title">Jogar offline</h2></div>
 <p>Prepare os arquivos do jogo para jogar sem internet. A primeira preparação precisa de conexão e espaço livre.</p>
 <p><button class="pvz-stone" id="offline-prepare" hidden>Preparar offline</button></p>
@@ -31,4 +43,24 @@
 <p id="save-status" role="status">A restauração substitui o progresso local e guarda uma cópia de segurança antes.</p>
 </section>
 </div>
-</main><script type="module" src="pwa.js"></script><script type="module" src="save-tools.js"></script></body></html>
+</main><script type="module" src="pwa.js"></script><script type="module" src="save-tools.js"></script><script type="module">
+const key = "pvz-goty-plus:mods:fusion:v1";
+const install = document.querySelector("#fusion-install"), uninstall = document.querySelector("#fusion-uninstall");
+const play = document.querySelector("#fusion-play"), status = document.querySelector("#fusion-status");
+let installed = false, storage = true;
+try { installed = localStorage.getItem(key) === "1"; } catch { storage = false; }
+function render() {
+  install.hidden = installed; uninstall.hidden = !installed; play.hidden = !installed;
+  status.textContent = installed ? "Fusion instalado." : "Fusion não instalado.";
+  if (!storage) status.textContent += " A escolha vale somente nesta página.";
+}
+function setInstalled(value) {
+  installed = value;
+  try { if (value) localStorage.setItem(key, "1"); else localStorage.removeItem(key); }
+  catch { storage = false; }
+  render();
+}
+install.addEventListener("click", () => setInstalled(true));
+uninstall.addEventListener("click", () => setInstalled(false));
+render();
+</script></body></html>
