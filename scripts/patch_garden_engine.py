@@ -24,3 +24,39 @@ replace_once("\tmMaxExecutions = GetInteger(\"MaxExecutions\", 0);",
              "\tGardenInitializeSandbox(this);\n\tmMaxExecutions = GetInteger(\"MaxExecutions\", 0);")
 extension = Path(__file__).resolve().parents[1] / "engine" / "garden.inc"
 source.write_text(text + "\n" + extension.read_text(encoding="utf-8"), encoding="utf-8")
+
+# Suspend the existing wave scheduler without touching its counters.
+board_path = upstream / "src" / "Lawn" / "Board.cpp"
+board = board_path.read_text(encoding="utf-8")
+anchor = "void Board::UpdateZombieSpawning()\n{"
+if board.count(anchor) != 1:
+    raise RuntimeError("Pinned wave scheduler mismatch")
+board = board.replace(anchor, "extern bool GardenEditorWavesFrozen();\n\n" + anchor + "\n\tif (GardenEditorWavesFrozen()) return;", 1)
+board_path.write_text(board, encoding="utf-8")
+
+# Per-entity damage is stored in temporary maps and captured on projectile launch.
+def editor_patch(s, old, new):
+    if s.count(old) != 1:
+        raise RuntimeError("Pinned editor source mismatch: " + old[:80])
+    return s.replace(old, new, 1)
+
+plant_path = upstream / "src" / "Lawn" / "Plant.cpp"
+plant = plant_path.read_text(encoding="utf-8")
+anchor = "void Plant::PlantInitialize(int theGridX, int theGridY, SeedType theSeedType, SeedType theImitaterType)\n{"
+plant = editor_patch(plant, anchor, "extern void GardenForgetPlant(const Plant*);\nextern void GardenRegisterShot(const Plant*, const Projectile*);\nextern int GardenPlantDamage(const Plant*, int);\n\n" + anchor + "\n\tGardenForgetPlant(this);")
+plant = editor_patch(plant, "void Plant::Die()\n{", "void Plant::Die()\n{\n\tGardenForgetPlant(this);")
+anchor = "Projectile* aProjectile = mBoard->AddProjectile(aOriginX, aOriginY, mRenderOrder - 1, theRow, aProjectileType);"
+plant = editor_patch(plant, anchor, anchor + "\n\tGardenRegisterShot(this, aProjectile);")
+anchor = "Projectile* aProjectile = mBoard->AddProjectile(mX + 25, mY + 25, mRenderOrder - 1, mRow, ProjectileType::PROJECTILE_STAR);"
+plant = editor_patch(plant, anchor, anchor + "\n\t\tGardenRegisterShot(this, aProjectile);")
+plant = editor_patch(plant, "int aDamage = theDamage;\n\t\t\t\tif ((aZombie->mZombieType", "int aDamage = GardenPlantDamage(this, theDamage);\n\t\t\t\tif ((aZombie->mZombieType")
+plant_path.write_text(plant, encoding="utf-8")
+
+projectile_path = upstream / "src" / "Lawn" / "Projectile.cpp"
+projectile = projectile_path.read_text(encoding="utf-8")
+anchor = "void Projectile::ProjectileInitialize(int theX, int theY, int theRenderOrder, int theRow, ProjectileType theProjectileType)\n{"
+projectile = editor_patch(projectile, anchor, "extern void GardenForgetShot(const Projectile*);\nextern int GardenShotDamage(const Projectile*, int);\n\n" + anchor + "\n\tGardenForgetShot(this);")
+projectile = editor_patch(projectile, "void Projectile::Die()\n{", "void Projectile::Die()\n{\n\tGardenForgetShot(this);")
+projectile = editor_patch(projectile, "int aOriginalDamage = aProjectileDef.mDamage;\n\tint aSplashDamage = aProjectileDef.mDamage / 3;", "int aOriginalDamage = GardenShotDamage(this, aProjectileDef.mDamage);\n\tint aSplashDamage = aOriginalDamage / 3;")
+projectile = editor_patch(projectile, "theZombie->TakeDamage(GetProjectileDef().mDamage, aDamageFlags);", "theZombie->TakeDamage(GardenShotDamage(this, GetProjectileDef().mDamage), aDamageFlags);")
+projectile_path.write_text(projectile, encoding="utf-8")

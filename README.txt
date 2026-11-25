@@ -54,6 +54,31 @@ emulação no mesmo endereço, o site copia users.dat e userN.dat da instalaçã
 com o progresso mais recente. Isso recupera
 nome, fase e desbloqueios. Ondas em andamento da emulação ficam no banco antigo.
 
+GOTY+ — PLANO SANDBOX 2.0 E MODS
+Direção de arte obrigatória: todos os menus novos reutilizam texturas raster,
+molduras, botões e animações originais do GOTY, com máscaras e proporções
+corretas. Não substituir o canvas por uma interface web genérica. Validar
+toque, scroll interno, retrato/paisagem e viewport no Safari iOS e Chromium.
+
+Sandbox 2.0: manter o perfil isolado em MEMFS, sem tocar nos saves clássicos.
+S1: editor de tabuleiro, seleção de célula/espécie, invocação e remoção de
+plantas respeitando terreno e camadas; invocação de zumbis em linhas válidas.
+S2: inspeção e edição de vida, dano e velocidade por entidade; invencibilidade,
+recarga, limites, controle de ondas. Separar comandos de depuração dos saves.
+S3: cenários versionados, validação de esquema e limites, importação/exportação
+de dados sem código executável, restauração previsível do tabuleiro.
+S4: seletor de mapas e editor de cenários com a arte dos menus originais.
+
+Mods: catálogo independente, instalação e desinstalação, versão e compatibilidade.
+Fusion nativo é a primeira extensão (PR #6 e PR #7). Usar as mecânicas do
+fangame como inspiração, nunca copiar código ou distribuir recursos externos
+sem licença. As receitas iniciais usam espécies GOTY; os híbridos seguintes
+combinam habilidades reais. Arte de híbridos e persistência versionada ainda
+pendentes. Mods externos serão declarativos, validados e limitados às APIs
+explicitamente suportadas; não executar scripts, APK, EXE ou DLL importados.
+Critério de entrega: compilar WASM, verificar hashes, testar mecânicas reais
+no canvas, isolamento da campanha e visual responsivo; só então publicar.
+
 DESENVOLVIMENTO LOCAL
 Com Python 3.9 ou superior, na raiz do repositório:
   python scripts/build.py
