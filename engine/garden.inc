@@ -268,6 +268,21 @@ extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorZombieAttribute(int row, int fie
     }
     return 0;
 }
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorChooser(int seed)
+{
+    if (!gardenSandbox || !gLawnApp || gLawnApp->GetDialogCount() ||
+        !gLawnApp->mSeedChooserScreen || !gLawnApp->mBoard) return -1;
+    auto* chooser = gLawnApp->mSeedChooserScreen.get();
+    if (!chooser->mMouseVisible || chooser->mSeedsInFlight ||
+        chooser->mChooseState != SeedChooserState::CHOOSE_NORMAL) return -1;
+    if (seed == -1) return chooser->mSeedsInBank == gLawnApp->mBoard->mSeedBank->mNumPackets ? 1 : 0;
+    if (seed < 0 || seed >= int(SeedType::SEED_IMITATER) ||
+        !gLawnApp->HasSeedType(static_cast<SeedType>(seed))) return -3;
+    auto& card = chooser->mChosenSeeds[seed];
+    if (card.mSeedState != ChosenSeedState::SEED_IN_CHOOSER) return -2;
+    return card.mX + chooser->mX + 24 + (card.mY + chooser->mY + 30) * 1024;
+}
+
 extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorWave(int action, int value)
 {
     if (!gardenEditorAvailable()) return -1;
