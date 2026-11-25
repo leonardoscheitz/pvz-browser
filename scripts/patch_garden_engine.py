@@ -195,3 +195,11 @@ plant = patch_hybrid(plant,
 "\tif (mSeedType == SeedType::SEED_SNOWPEA)\n\t{\n\t\tint aRenderPosition = Board::MakeRenderOrder",
 "\tif (mSeedType == SeedType::SEED_SNOWPEA || GardenHybridKind(this) == 2)\n\t{\n\t\tint aRenderPosition = Board::MakeRenderOrder")
 plant_path.write_text(plant, encoding="utf-8")
+
+# CanPlantAt is defined before the mouse handler in the pinned source.
+# Declare the fusion resolver before its first call.
+board = board_path.read_text(encoding="utf-8")
+anchor = "PlantingReason Board::CanPlantAt(int theGridX, int theGridY, SeedType theSeedType)\n{"
+board = patch_hybrid(board, anchor,
+    "static SeedType GardenFusionResult(Board* board, Plant* base, SeedType incoming);\n\n" + anchor)
+board_path.write_text(board, encoding="utf-8")
