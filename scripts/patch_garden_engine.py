@@ -99,7 +99,8 @@ board = patch_hybrid(board, "    const SeedType planted = base->mSeedType;",
 board = patch_hybrid(board, "\tSeedType aFusionSeedType = GardenFusionResult(this, aNormalPlant, aPlantingSeedType);",
 """\tSeedType aFusionSeedType = GardenFusionResult(this, aNormalPlant, aPlantingSeedType);
 \tconst int aHybridKind = aFusionSeedType != SeedType::SEED_NONE && aNormalPlant
-\t\t? GardenHybridRecipe(aNormalPlant->mSeedType, aPlantingSeedType) : 0;""")
+\t\t? GardenHybridRecipe(aNormalPlant->mSeedType, aPlantingSeedType) : 0;
+\tif (aFusionSeedType != SeedType::SEED_NONE) Plant::PreloadPlantResources(aFusionSeedType);""")
 board = patch_hybrid(board, "\t\t\t: AddPlant(aGridX, aGridY, aFusionSeedType, SeedType::SEED_NONE);",
 "\t\t\t: AddPlant(aGridX, aGridY, aFusionSeedType, SeedType::SEED_NONE);\n\t\tif (aHybridKind) GardenHybridRegister(aPlant, aHybridKind);")
 board_path.write_text(board, encoding="utf-8")
@@ -180,7 +181,7 @@ replacement = """\t\taOffsetX += mShakeOffsetX;
                 const float size = hybridKind == 1 ? 64.0f : 72.0f;
                 const float scale = size / std::max(part->GetWidth(), part->GetHeight());
                 int headX = 0, headY = 0;
-                if (hybridKind == 1 && mBodyReanimID != ReanimationID::REANIMATIONID_NULL)
+                if (hybridKind == 1 && mApp->ReanimationTryToGet(mBodyReanimID))
                     GetPeaHeadOffset(headX, headY);
                 const float centerX = hybridKind == 1 ? aOffsetX + headX + 29.0f : aOffsetX + 39.0f;
                 const float centerY = hybridKind == 1 ? aOffsetY + headY + 18.0f : aOffsetY + 45.0f;
