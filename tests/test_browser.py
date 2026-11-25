@@ -203,8 +203,8 @@ class WebGame(unittest.TestCase):
             self.skipTest("Visual kit smoke test on Chromium")
         self.page.goto(self.url + "tools.html")
         self.assertTrue(self.page.locator(".pvz-logo").is_visible())
-        self.assertEqual(self.page.locator(".pvz-panel-icon").count(), 3)
-        self.assertEqual(self.page.locator(".pvz-panel-art span").count(), 27)
+        self.assertEqual(self.page.locator(".pvz-panel-icon").count(), 4)
+        self.assertEqual(self.page.locator(".pvz-panel-art span").count(), 36)
         self.assertTrue(self.page.locator("#save-export").is_visible())
         self.assertTrue(self.page.locator("#save-import").is_disabled())
         self.assertTrue(self.page.evaluate("""async () => {
@@ -227,6 +227,82 @@ class WebGame(unittest.TestCase):
                 folder = Path(os.environ["PVZ_UI_SCREENSHOTS"])
                 folder.mkdir(parents=True, exist_ok=True)
                 self.page.screenshot(path=str(folder / f"workshop-{width}x{height}.png"), full_page=True)
+
+    def test_fusion_catalog(self):
+        self.page.goto(self.url + "tools.html#mods")
+        self.assertTrue(self.page.locator("#fusion-play").is_hidden())
+        self.page.locator("#fusion-install").click()
+        self.assertTrue(self.page.locator("#fusion-play").is_visible())
+        self.page.reload()
+        self.assertTrue(self.page.locator("#fusion-play").is_visible())
+        self.page.locator("#fusion-uninstall").click()
+        self.page.reload()
+        self.assertTrue(self.page.locator("#fusion-play").is_hidden())
+
+    def test_fusion_planting_and_cost(self):
+        if not os.environ.get("PVZ_REQUIRE_FUSION"):
+            self.skipTest("Requires freshly compiled Fusion engine")
+        for enabled in (True, False):
+            with self.subTest(fusion=enabled):
+                self.page.goto(self.url + "?sandbox=1&level=3" + ("&mod=fusion" if enabled else ""))
+                self.wait_engine()
+                trigger = self.page.locator("#sandbox-level-trigger")
+                end = time.monotonic() + 65
+                while trigger.is_hidden():
+                    self.assertLess(time.monotonic(), end, "Native selector did not open")
+                    self.choose(400, 550)
+                    self.page.wait_for_timeout(700)
+                trigger.click()
+                self.page.locator("#sandbox-level").select_option("3")
+                self.page.locator("#sandbox-level-menu button[type=submit]").click()
+                self.page.wait_for_function("Module._gardenInspectChooser(-1) >= 0", timeout=65000)
+                # Prefer ordinary plants; the native seed chooser also supports
+                # preselected Crazy Dave cards. Inspect the actual visible positions.
+                for seed in [0,1,7,3,5,2,4,6,8,9,10,21,34,39,16,31]:
+                    self.page.wait_for_function("Module._gardenInspectChooser(-1) >= 0")
+                    if self.page.evaluate("Module._gardenInspectChooser(-1)") == 1:
+                        break
+                    pos = self.page.evaluate("s => Module._gardenInspectChooser(s)", seed)
+                    if pos >= 0:
+                        self.choose(pos % 1024, pos // 1024)
+                        self.page.wait_for_timeout(350)
+                self.page.wait_for_function("Module._gardenInspectChooser(-1) === 1")
+                self.choose(230, 565)
+                self.page.wait_for_function("Module._gardenState(0) >= 0", timeout=65000)
+                self.assertEqual(self.page.evaluate("Module._gardenChange(0, 300)"), 1)
+                self.page.wait_for_function("Module._gardenInspectPacket(0) >= 0")
+                def pick_pea():
+                    pos = self.page.evaluate("Module._gardenInspectPacket(0)")
+                    self.assertGreaterEqual(pos, 0)
+                    self.choose(pos % 1024, pos // 1024)
+                cell = self.page.evaluate("Module._gardenInspectCell(0, 2)")
+                self.assertGreaterEqual(cell, 0)
+                pick_pea()
+                self.choose(cell % 1024, cell // 1024)
+                self.assertEqual(self.page.evaluate("Module._gardenInspectPlant(0, 2)"), 0)
+                self.assertEqual(self.page.evaluate("Module._gardenState(0)"), 200)
+                self.page.wait_for_function("Module._gardenInspectPacket(0) >= 0", timeout=30000)
+                self.page.evaluate("Module._gardenChange(0, 99)")
+                self.assertEqual(self.page.evaluate("Module._gardenInspectPacket(0)"), -1)
+                self.page.evaluate("Module._gardenChange(0, 200)")
+                pick_pea()
+                self.choose(cell % 1024, cell // 1024)
+                self.assertEqual(self.page.evaluate("Module._gardenInspectPlant(0, 2)"), 7 if enabled else 0)
+                self.assertEqual(self.page.evaluate("Module._gardenState(0)"), 100 if enabled else 200)
+
+    def test_fusion_native_isolation(self):
+        if not os.environ.get("PVZ_REQUIRE_FUSION"):
+            self.skipTest("Requires freshly compiled Fusion engine")
+        self.page.goto(self.url + "?sandbox=1&mod=fusion&level=3")
+        self.wait_engine()
+        self.assertEqual(self.page.evaluate("Module._gardenFusionActive()"), 1)
+        self.assertFalse(self.page.evaluate("Module.FS.analyzePath('/pvz-browser-goty').exists"))
+        self.page.goto(self.url + "?sandbox=1")
+        self.wait_engine()
+        self.assertEqual(self.page.evaluate("Module._gardenFusionActive()"), 0)
+        self.page.goto(self.url)
+        self.wait_engine()
+        self.assertEqual(self.page.evaluate("Module._gardenFusionActive()"), 0)
 
     def test_editor_sandbox_board(self):
         if not os.environ.get("PVZ_REQUIRE_EDITOR"):
