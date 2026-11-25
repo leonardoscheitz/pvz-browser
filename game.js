@@ -10,16 +10,18 @@ const retry = document.querySelector("#retry");
 const toolsLink = document.querySelector("#tools-link");
 const params = new URLSearchParams(location.search);
 const sandbox = params.get("sandbox") === "1";
+const fusion = sandbox && params.get("mod") === "fusion";
 const chosenLevel = Number(params.get("level") || "1");
 const sandboxLevel = Number.isInteger(chosenLevel) && chosenLevel >= 1 && chosenLevel <= 50 ? chosenLevel : 1;
 if (sandbox) {
-  document.title = "Sandbox — PvZ GOTY+";
-  toolsLink.textContent = "Sair do Sandbox";
-  toolsLink.href = "./";
+  document.title = fusion ? "Fusion — PvZ GOTY+" : "Sandbox — PvZ GOTY+";
+  toolsLink.textContent = fusion ? "Sair do Fusion" : "Sair do Sandbox";
+  toolsLink.href = fusion ? "mods.html" : "./";
   document.body.classList.add("sandbox-session");
   // The full-size native canvas is never resized for web controls.
   // Reuse the selector button; the exit action lives inside its modal.
-  document.querySelector("#sandbox-level-trigger").textContent = "Sandbox";
+  document.querySelector("#sandbox-level-trigger").textContent = fusion ? "Fusion" : "Sandbox";
+  if (fusion) document.querySelector("#sandbox-level-title").textContent = "Fusion";
   document.querySelector("#sandbox-indicator").hidden = true;
 }
 const bar = document.querySelector("[role=progressbar]");
@@ -167,7 +169,10 @@ async function start() {
     fs.mkdir("/saves");
     if (typeof module._gardenSandboxEnable !== "function" || !module._gardenSandboxEnable(sandboxLevel))
       throw new Error("O motor desbloqueado do Sandbox não está disponível nesta versão.");
-    notify("Sandbox: modos e plantas liberados. Sua campanha permanece intacta.");
+    if (fusion && (typeof module._gardenFusionEnable !== "function" || !module._gardenFusionEnable()))
+      throw new Error("O motor Fusion não está disponível nesta versão. Abra o catálogo Mods após atualizar o jogo.");
+    notify(fusion ? "Fusion: plante uma semente compatível sobre outra planta. Sessão temporária." :
+      "Sandbox: modos e plantas liberados. Sua campanha permanece intacta.");
   } else {
     persistent = await mountSaves(module, notify);
   }
@@ -219,7 +224,7 @@ function installSandboxSelector(module) {
     const level = module._gardenSandboxMenu();
     if (!level || dialog.open) return;
     choices.value = String(Math.min(50, Math.max(1, level)));
-    status.textContent = "Escolha uma fase ou saia do Sandbox.";
+    status.textContent = fusion ? "Escolha uma fase para experimentar as fusões." : "Escolha uma fase ou saia do Sandbox.";
     dialog.showModal();
   });
   dialog.querySelector("form").addEventListener("submit", event => {
