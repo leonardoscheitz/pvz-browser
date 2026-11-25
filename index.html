@@ -38,7 +38,9 @@
     button:focus-visible { outline: 3px solid white; outline-offset: 3px; }
     #notice { position: absolute; top: .6rem; left: 50%; transform: translateX(-50%); width: max-content;
       max-width: 94%; padding: .45rem .7rem; border-radius: .3rem; background: #262114f2; font-size: .85rem; }
-    #notice button { margin-left: .5rem; padding: .1rem .45rem; }
+    #notice { pointer-events: none; }
+    #notice button { pointer-events: auto; margin-left: .5rem; padding: .1rem .45rem; }
+    body.sandbox-session #notice { top: auto; bottom: 3.5rem; }
     .sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     #garden-trigger, #garden-menu button { font-family: var(--pvz-display); font-weight: 900; }
     #garden-trigger { position: absolute; bottom: 1%; left: 1%; background: url('{{STONE_BUTTON}}') center / 100% 100%;
