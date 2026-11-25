@@ -19,6 +19,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE int gardenFusionEnable()
 }
 
 bool GardenFusionEnabled() { return gardenSandbox && gardenFusion; }
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenFusionActive() { return GardenFusionEnabled() ? 1 : 0; }
 
 
 extern "C" EMSCRIPTEN_KEEPALIVE int gardenSandboxEnable(int level)
