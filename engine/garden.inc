@@ -120,6 +120,40 @@ static bool GardenAdvancedAvailable(Board* board)
         !board->HasConveyorBeltSeedBank() && !gLawnApp->IsSlotMachineLevel();
 }
 
+// Read-only sandbox diagnostics for browser regression tests and future editors.
+// Returns the native seed at a cell, or -1 when empty/unavailable.
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectPlant(int col, int row)
+{
+    Board* board = GardenBoard();
+    if (!gardenSandbox || !GardenAdvancedAvailable(board) ||
+        col < 0 || col >= MAX_GRID_SIZE_X || row < 0 || row >= MAX_GRID_SIZE_Y)
+        return -1;
+    Plant* plant = board->GetTopPlantAt(col, row, PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION);
+    return plant && !plant->mDead ? int(plant->mSeedType) : -1;
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectPacket(int seed)
+{
+    Board* board = GardenBoard();
+    if (!gardenSandbox || !GardenAdvancedAvailable(board) || !board->mSeedBank) return -1;
+    for (int i = 0; i < board->mSeedBank->mNumPackets; ++i) {
+        SeedPacket& packet = board->mSeedBank->mSeedPackets[i];
+        if (int(packet.mPacketType) == seed && packet.CanPickUp())
+            return (packet.mX + packet.mOffsetX + packet.mWidth / 2 + board->mX) +
+                   (packet.mY + packet.mHeight / 2 + board->mY) * 1024;
+    }
+    return -1;
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectCell(int col, int row)
+{
+    Board* board = GardenBoard();
+    if (!gardenSandbox || !GardenAdvancedAvailable(board) ||
+        col < 0 || col >= MAX_GRID_SIZE_X || row < 0 || row >= MAX_GRID_SIZE_Y) return -1;
+    return board->GridToPixelX(col, row) + 40 + board->mX +
+           (board->GridToPixelY(col, row) + 40 + board->mY) * 1024;
+}
+
 static void GardenResetModifiers()
 {
     gardenInfiniteSun = false;
