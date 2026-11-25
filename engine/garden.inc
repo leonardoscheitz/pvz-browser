@@ -179,6 +179,15 @@ extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorAvailable()
         !gLawnApp->IsWallnutBowlingLevel() && !board->HasLevelAwardDropped();
 }
 
+// Explicit Sandbox fusion action, separate from normal seed-packet planting.
+extern int GardenEditorFuseNative(Board*, int, int, SeedType);
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorFuse(int col, int row, int seed)
+{
+    if (!GardenFusionEnabled() || !gardenEditorAvailable() ||
+        seed < 0 || seed >= int(SeedType::SEED_IMITATER)) return 0;
+    return GardenEditorFuseNative(GardenBoard(), col, row, static_cast<SeedType>(seed));
+}
+
 // Native planting checks, including the layered cells and upgrade bases.
 extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorPlant(int col, int row, int seed)
 {
