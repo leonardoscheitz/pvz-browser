@@ -145,6 +145,28 @@ extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorRemove(int col, int row)
 }
 
 // Temporary editor controls; never mutate the serialized structure of entities.
+// Damage overrides are transient side tables, not part of native save layouts.
+#include <unordered_map>
+static std::unordered_map<const Plant*, int> gardenDamagePercent;
+static std::unordered_map<const Projectile*, int> gardenShotPercent;
+void GardenForgetPlant(const Plant* p) { gardenDamagePercent.erase(p); }
+void GardenForgetShot(const Projectile* p) { gardenShotPercent.erase(p); }
+int GardenPlantDamage(const Plant* p, int base)
+{
+    const auto i = gardenDamagePercent.find(p);
+    return i == gardenDamagePercent.end() ? base : std::clamp(base * i->second / 100, 1, 100000);
+}
+void GardenRegisterShot(const Plant* p, const Projectile* shot)
+{
+    const auto i = gardenDamagePercent.find(p);
+    if (i != gardenDamagePercent.end()) gardenShotPercent.insert_or_assign(shot, i->second);
+}
+int GardenShotDamage(const Projectile* p, int base)
+{
+    const auto i = gardenShotPercent.find(p);
+    return i == gardenShotPercent.end() ? base : std::clamp(base * i->second / 100, 1, 100000);
+}
+
 static bool gardenFreezeWaves = false;
 static bool gardenRegenerate = false;
 
@@ -199,6 +221,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorPlantState(int col, int row, int
         case 1: return p->mPlantHealth;
         case 2: return p->mPlantMaxHealth;
         case 3: return p->mLaunchRate;
+        case 4: { const auto i = gardenDamagePercent.find(p); return i == gardenDamagePercent.end() ? 100 : i->second; }
         default: return -1;
     }
 }
@@ -210,6 +233,9 @@ extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorPlantAttribute(int col, int row,
         p->mPlantHealth = value;
         p->mPlantMaxHealth = value;
         return 1;
+    }
+    if (field == 4 && value >= 10 && value <= 1000 && p->mLaunchRate > 0) {
+        gardenDamagePercent.insert_or_assign(p, value); return 1;
     }
     if (field == 3 && value >= 80 && value <= 10000 && p->mLaunchRate > 0) {
         p->mLaunchRate = value;
@@ -265,6 +291,8 @@ extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorWave(int action, int value)
 
 static void GardenResetModifiers()
 {
+    gardenDamagePercent.clear();
+    gardenShotPercent.clear();
     gardenFreezeWaves = false;
     gardenRegenerate = false;
     gardenInfiniteSun = false;
