@@ -203,3 +203,64 @@ anchor = "PlantingReason Board::CanPlantAt(int theGridX, int theGridY, SeedType 
 board = patch_hybrid(board, anchor,
     "static SeedType GardenFusionResult(Board* board, Plant* base, SeedType incoming);\n\n" + anchor)
 board_path.write_text(board, encoding="utf-8")
+
+# Fusion 0.2.1: keep the shared recipe independent of the cursor for the
+# explicit sandbox editor command; normal planting still requires a seed packet.
+board = board_path.read_text(encoding="utf-8")
+board = patch_hybrid(board,
+    "static SeedType GardenFusionResult(Board* board, Plant* base, SeedType incoming);",
+    "static SeedType GardenFusionResult(Board* board, Plant* base, SeedType incoming, bool editor = false);")
+board = patch_hybrid(board,
+    "static SeedType GardenFusionResult(Board* board, Plant* base, SeedType incoming)\n{",
+    "static SeedType GardenFusionResult(Board* board, Plant* base, SeedType incoming, bool editor)\n{")
+board = patch_hybrid(board,
+    "        !board->mCursorObject || board->mCursorObject->mCursorType != CursorType::CURSOR_TYPE_PLANT_FROM_BANK ||\n        board->mCursorObject->mType != incoming)",
+    "        (!editor && (!board->mCursorObject || board->mCursorObject->mCursorType != CursorType::CURSOR_TYPE_PLANT_FROM_BANK ||\n        board->GetSeedTypeInCursor() != incoming)))")
+# Resolve taps on a visible plant even if the top of its sprite crosses the cell
+# boundary. Prefer a compatible plant in the original grid square.
+anchor = "\tint aGridY = PlantingPixelToGridY(x, y, aPlantingSeedType);\n\n\tif (aGridX < 0"
+board = patch_hybrid(board, anchor, """\tint aGridY = PlantingPixelToGridY(x, y, aPlantingSeedType);
+    if (GardenFusionEnabled() && mCursorObject->mCursorType == CursorType::CURSOR_TYPE_PLANT_FROM_BANK)
+    {
+        Plant* original = GetTopPlantAt(aGridX, aGridY, PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION);
+        if (!original)
+        {
+            Plant* candidate = nullptr;
+            for (Plant* p : mPlants)
+            {
+                if (!p->GetPlantRect().Contains(x,y) ||
+                    GardenFusionResult(this,p,aPlantingSeedType) == SeedType::SEED_NONE ||
+                    GetTopPlantAt(p->mPlantCol,p->mRow,PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION) != p)
+                    continue;
+                if (!candidate || p->mRenderOrder > candidate->mRenderOrder) candidate = p;
+            }
+            if (candidate) { aGridX = candidate->mPlantCol; aGridY = candidate->mRow; }
+        }
+    }
+
+\tif (aGridX < 0""")
+# Separate debug action: uses the same recipes, not simulated mouse clicks.
+board += """
+int GardenEditorFuseNative(Board* board, int col, int row, SeedType incoming)
+{
+    if (!board || board->HasLevelAwardDropped() || col < 0 || col >= MAX_GRID_SIZE_X ||
+        row < 0 || row >= MAX_GRID_SIZE_Y ||
+        board->mPlants.mSize >= board->mPlants.mMaxSize - 1) return 0;
+    auto* base = board->GetTopPlantAt(col,row,PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION);
+    const SeedType result = GardenFusionResult(board,base,incoming,true);
+    if (result == SeedType::SEED_NONE) return 0;
+    const int kind = GardenHybridRecipe(base->mSeedType,incoming);
+    const bool awake = !base->mIsAsleep;
+    const int wake = base->mWakeUpCounter;
+    Plant::PreloadPlantResources(result);
+    base->Die();
+    auto* plant = board->AddPlant(col,row,result,SeedType::SEED_NONE);
+    if (kind) GardenHybridRegister(plant,kind);
+    if (result == SeedType::SEED_GLOOMSHROOM)
+    {
+        if (awake) plant->SetSleeping(false); else plant->mWakeUpCounter = wake;
+    }
+    return kind ? 100 + kind : 1 + int(result);
+}
+"""
+board_path.write_text(board, encoding="utf-8")

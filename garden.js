@@ -70,10 +70,21 @@ export function installGarden(module, canvas) {
   const integer = (n, lo, hi) => Number.isInteger(n) && n >= lo && n <= hi;
   function refreshEditor() {
     if (!editorAvailable()) return;
+    byId("editor-fusion-row").hidden = !(module._gardenFusionActive?.() && typeof module._gardenEditorFuse === "function");
     byId("editor-wave-status").textContent = "Ondas iniciadas: " + module._gardenEditorWave(0,0) + " / " + module._gardenEditorWave(1,0);
     byId("editor-freeze").checked = module._gardenEditorWave(4,0) === 1;
     byId("editor-regen").checked = module._gardenEditorWave(6,0) === 1;
   }
+  byId("editor-fuse").onclick = () => {
+    const [col,row] = cell(), seed = Number(byId("editor-seed").value);
+    if (!editorAvailable() || !integer(col,0,8) || !integer(row,0,5) || !integer(seed,0,47)) {
+      byId("editor-fusion-result").textContent = "Célula ou planta inválida."; return;
+    }
+    const result = module._gardenEditorFuse(col,row,seed);
+    const hybridNames = {101:"Ervilhadora Solar",102:"Repetidora Congelante",103:"Noz Atiradora"};
+    const name = hybridNames[result] || byId("editor-seed").querySelector('option[value="' + (result-1) + '"]')?.textContent;
+    byId("editor-fusion-result").textContent = result ? "Fusão concluída: " + (name || "planta combinada") : "Receita incompatível, célula vazia ou fase não suportada.";
+  };
   byId("editor-spawn-zombie").onclick = () => {
     const row = val("editor-row"), count = val("editor-count");
     if (!editorAvailable() || !integer(row,1,6) || !integer(count,1,20)) {
