@@ -8,6 +8,19 @@
 static bool gardenSandbox = false;
 static int gardenSandboxStartLevel = 1;
 
+static bool gardenFusion = false;
+
+// Only the isolated mod session may activate this feature, before the engine starts.
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenFusionEnable()
+{
+    if (gLawnApp || !gardenSandbox) return 0;
+    gardenFusion = true;
+    return 1;
+}
+
+bool GardenFusionEnabled() { return gardenSandbox && gardenFusion; }
+
+
 extern "C" EMSCRIPTEN_KEEPALIVE int gardenSandboxEnable(int level)
 {
     if (gLawnApp || level < 1 || level > 50) return 0;
