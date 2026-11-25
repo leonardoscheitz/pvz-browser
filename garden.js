@@ -64,6 +64,66 @@ export function installGarden(module, canvas) {
   }
   menu.querySelector("#editor-plant").onclick = () => editPlant(false);
   menu.querySelector("#editor-remove").onclick = () => editPlant(true);
+  const byId = id => menu.querySelector("#" + id);
+  const val = id => byId(id).valueAsNumber;
+  const cell = () => [val("editor-col") - 1, val("editor-row") - 1];
+  const integer = (n, lo, hi) => Number.isInteger(n) && n >= lo && n <= hi;
+  function refreshEditor() {
+    if (!editorAvailable()) return;
+    byId("editor-wave-status").textContent = "Ondas iniciadas: " + module._gardenEditorWave(0,0) + " / " + module._gardenEditorWave(1,0);
+    byId("editor-freeze").checked = module._gardenEditorWave(4,0) === 1;
+    byId("editor-regen").checked = module._gardenEditorWave(6,0) === 1;
+  }
+  byId("editor-spawn-zombie").onclick = () => {
+    const row = val("editor-row"), count = val("editor-count");
+    if (!editorAvailable() || !integer(row,1,6) || !integer(count,1,20)) {
+      message.textContent = "Linha ou quantidade inválida."; return;
+    }
+    const n = module._gardenEditorSpawnZombie(row-1,Number(byId("editor-zombie").value),count);
+    message.textContent = n ? n + " zumbi(s) invocado(s)." : "Tipo incompatível com a linha ou limite atingido.";
+  };
+  function targetChanged() {
+    const zombie = byId("editor-target").value === "zombie";
+    byId("editor-rate-label").textContent = zombie ? "Velocidade (×1000)" : "Intervalo (ticks)";
+    const input = byId("editor-rate");
+    input.min = zombie ? "50" : "80";
+    input.max = zombie ? "3000" : "10000";
+    input.value = zombie ? "300" : "150";
+    input.disabled = false;
+  }
+  byId("editor-target").onchange = targetChanged;
+  byId("editor-inspect").onclick = () => {
+    if (!editorAvailable()) return;
+    const [col,row] = cell(), zombie = byId("editor-target").value === "zombie";
+    if (!integer(row,0,5) || (!zombie && !integer(col,0,8))) { message.textContent = "Célula inválida."; return; }
+    const read = field => zombie ? module._gardenEditorZombieState(row,field) : module._gardenEditorPlantState(col,row,field);
+    const hp = read(1), max = read(2), speed = read(3);
+    if (hp < 0) { message.textContent = "Nenhuma entidade encontrada."; return; }
+    byId("editor-health").value = max;
+    byId("editor-rate").disabled = speed <= 0;
+    if (speed > 0) byId("editor-rate").value = speed;
+    message.textContent = "Vida atual: " + hp + "/" + max;
+  };
+  byId("editor-apply").onclick = () => {
+    if (!editorAvailable()) return;
+    const [col,row] = cell(), zombie = byId("editor-target").value === "zombie";
+    const hp = val("editor-health"), rate = val("editor-rate"), editRate = !byId("editor-rate").disabled;
+    if (!integer(row,0,5) || (!zombie && !integer(col,0,8)) || !integer(hp,1,100000) ||
+      (editRate && !integer(rate,zombie?50:80,zombie?3000:10000))) { message.textContent = "Atributos inválidos."; return; }
+    const change = (field,value) => zombie ? module._gardenEditorZombieAttribute(row,field,value) : module._gardenEditorPlantAttribute(col,row,field,value);
+    if (!change(1,hp)) { message.textContent = "Nenhuma entidade encontrada."; return; }
+    const speedOk = !editRate || change(3,rate);
+    message.textContent = speedOk ? "Atributos aplicados." : "Vida aplicada; intervalo não suportado por esta entidade.";
+  };
+  for (const [id,action] of [["editor-freeze",2],["editor-regen",5]]) byId(id).onchange = () => {
+    if (editorAvailable()) module._gardenEditorWave(action,Number(byId(id).checked));
+    refreshEditor();
+  };
+  byId("editor-next-wave").onclick = () => {
+    if (!editorAvailable()) return;
+    message.textContent = module._gardenEditorWave(3,0) === 1 ? "Próxima onda antecipada ao retomar." : "Não há outra onda.";
+    refreshEditor();
+  };
   let resume = false;
   const viewport = window.visualViewport;
   function fitMenu() {
@@ -105,6 +165,7 @@ export function installGarden(module, canvas) {
     message.textContent = "Partida pausada";
     refreshAdvanced();
     editor.hidden = !editorAvailable();
+    if (!editor.hidden) refreshEditor();
     menu.showModal();
     fitMenu();
     viewport?.addEventListener("resize", fitMenu);
