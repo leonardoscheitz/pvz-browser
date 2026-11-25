@@ -1,9 +1,12 @@
 name: Compilar motor do Menu Hack
 on:
   push:
-    branches: [motor-menu-hack, goty-plus/motor-fase-2, goty-plus/sandbox-unlocked]
-    paths: ['engine/garden.inc', 'scripts/patch_garden_engine.py', '.github/workflows/garden-engine.yml']
+    branches: [motor-menu-hack, goty-plus/motor-fase-2, goty-plus/sandbox-unlocked, goty-plus/fusion-native]
+    paths: ['engine/garden.inc', 'scripts/patch_garden_engine.py', '.github/workflows/garden-engine.yml', 'tests/test_browser.py', 'game.js', 'tools.html']
   workflow_dispatch:
+concurrency:
+  group: garden-engine-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -34,8 +37,18 @@ jobs:
         with:
           name: pvz-garden
           path: vendor/pvz-garden.zip
+      - name: Validar catálogo e isolamento do Fusion
+        if: github.ref == 'refs/heads/goty-plus/fusion-native'
+        env:
+          PVZ_REQUIRE_FUSION: '1'
+        run: |
+          sha256sum vendor/pvz-garden.zip | cut -d' ' -f1 > vendor/pvz-garden.sha256
+          python3 scripts/build.py
+          python3 -m pip install playwright
+          python3 -m playwright install --with-deps chromium
+          python3 -m unittest discover -s tests -p test_browser.py -k fusion
       - name: Registrar o motor no ramo de compilação
-        if: github.ref == 'refs/heads/motor-menu-hack' || github.ref == 'refs/heads/goty-plus/motor-fase-2' || github.ref == 'refs/heads/goty-plus/sandbox-unlocked'
+        if: github.ref == 'refs/heads/motor-menu-hack' || github.ref == 'refs/heads/goty-plus/motor-fase-2' || github.ref == 'refs/heads/goty-plus/sandbox-unlocked' || github.ref == 'refs/heads/goty-plus/fusion-native'
         run: |
           sha256sum vendor/pvz-garden.zip | cut -d' ' -f1 > vendor/pvz-garden.sha256
           git config user.name 'github-actions[bot]'
