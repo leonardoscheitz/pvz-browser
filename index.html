@@ -188,14 +188,16 @@
           <label class="garden-row" id="garden-recharge-row" hidden>Recarga instantânea<input type="checkbox" id="garden-recharge"></label>
           <div class="garden-actions" id="garden-chill-row" hidden><button class="pvz-stone" id="garden-chill" type="button">Retardar zumbis</button></div>
           <section id="garden-editor" hidden aria-label="Editor do Sandbox" style="grid-column:1/-1">
-            <h2 class="pvz-title">Editor do jardim</h2>
+            <h2 class="pvz-title">Sandbox 2.0</h2><small>Escolha a célula. Terreno, camadas e bases de melhorias seguem as regras originais.</small>
             <label class="garden-row">Coluna <input id="editor-col" type="number" min="1" max="9" value="1" required inputmode="numeric"></label>
             <label class="garden-row">Linha <input id="editor-row" type="number" min="1" max="6" value="3" required inputmode="numeric"></label>
             <label class="garden-row">Planta <select id="editor-seed" style="min-width:0;max-width:65%">
-              <option value="0">Ervilhadora</option><option value="1">Girassol</option>
-              <option value="3">Noz</option><option value="5">Ervilhadora de gelo</option>
-              <option value="7">Repetidora</option><option value="8">Puff-shroom</option>
-              <option value="10">Fume-shroom</option><option value="23">Noz alta</option>
+              <optgroup label="Dia"><option value="0">Ervilhadora</option><option value="1">Girassol</option><option value="2">Bomba-cereja</option><option value="3">Noz</option><option value="4">Mina de batata</option><option value="5">Ervilhadora de gelo</option><option value="6">Carnívora</option><option value="7">Repetidora</option></optgroup>
+              <optgroup label="Noite"><option value="8">Puff-shroom</option><option value="9">Sun-shroom</option><option value="10">Fume-shroom</option><option value="11">Grave Buster</option><option value="12">Hypno-shroom</option><option value="13">Scaredy-shroom</option><option value="14">Ice-shroom</option><option value="15">Doom-shroom</option></optgroup>
+              <optgroup label="Piscina"><option value="16">Vitória-régia</option><option value="17">Squash</option><option value="18">Threepeater</option><option value="19">Tangle Kelp</option><option value="20">Jalapeño</option><option value="21">Spikeweed</option><option value="22">Torchwood</option><option value="23">Noz alta</option></optgroup>
+              <optgroup label="Neblina"><option value="24">Sea-shroom</option><option value="25">Plantern</option><option value="26">Cacto</option><option value="27">Blover</option><option value="28">Split Pea</option><option value="29">Starfruit</option><option value="30">Abóbora</option><option value="31">Magnet-shroom</option></optgroup>
+              <optgroup label="Telhado"><option value="32">Cabbage-pult</option><option value="33">Vaso</option><option value="34">Kernel-pult</option><option value="35">Grão de café</option><option value="36">Alho</option><option value="37">Umbrella Leaf</option><option value="38">Marigold</option><option value="39">Melon-pult</option></optgroup>
+              <optgroup label="Melhorias"><option value="40">Gatling Pea</option><option value="41">Girassol duplo</option><option value="42">Gloom-shroom</option><option value="43">Cattail</option><option value="44">Winter Melon</option><option value="45">Gold Magnet</option><option value="46">Spikerock</option><option value="47">Cob Cannon</option></optgroup>
             </select></label>
             <div class="garden-actions"><button class="pvz-stone" id="editor-plant" type="button">Invocar</button><button class="pvz-stone" id="editor-remove" type="button">Remover</button></div>
             <h2 class="pvz-title">Zumbis</h2>
