@@ -2,8 +2,11 @@ name: Compilar motor do Menu Hack
 on:
   push:
     branches: [motor-menu-hack, goty-plus/motor-fase-2, goty-plus/sandbox-unlocked, goty-plus/fusion-native]
-    paths: ['engine/garden.inc', 'scripts/patch_garden_engine.py', '.github/workflows/garden-engine.yml']
+    paths: ['engine/garden.inc', 'scripts/patch_garden_engine.py', '.github/workflows/garden-engine.yml', 'tests/test_browser.py', 'game.js', 'tools.html']
   workflow_dispatch:
+concurrency:
+  group: garden-engine-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
