@@ -8,6 +8,20 @@
 static bool gardenSandbox = false;
 static int gardenSandboxStartLevel = 1;
 
+static bool gardenFusion = false;
+
+// Only the isolated mod session may activate this feature, before the engine starts.
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenFusionEnable()
+{
+    if (gLawnApp || !gardenSandbox) return 0;
+    gardenFusion = true;
+    return 1;
+}
+
+bool GardenFusionEnabled() { return gardenSandbox && gardenFusion; }
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenFusionActive() { return GardenFusionEnabled() ? 1 : 0; }
+
+
 extern "C" EMSCRIPTEN_KEEPALIVE int gardenSandboxEnable(int level)
 {
     if (gLawnApp || level < 1 || level > 50) return 0;
@@ -104,6 +118,57 @@ static bool GardenAdvancedAvailable(Board* board)
     return board && gLawnApp->mGameMode == GameMode::GAMEMODE_ADVENTURE &&
         !board->mLevelComplete && board->mBoardFadeOutCounter < 0 &&
         !board->HasConveyorBeltSeedBank() && !gLawnApp->IsSlotMachineLevel();
+}
+
+// Read-only sandbox diagnostics for browser regression tests and future editors.
+// Returns the native seed at a cell, or -1 when empty/unavailable.
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectPlant(int col, int row)
+{
+    Board* board = GardenBoard();
+    if (!gardenSandbox || !GardenAdvancedAvailable(board) ||
+        col < 0 || col >= MAX_GRID_SIZE_X || row < 0 || row >= MAX_GRID_SIZE_Y)
+        return -1;
+    Plant* plant = board->GetTopPlantAt(col, row, PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION);
+    return plant && !plant->mDead ? int(plant->mSeedType) : -1;
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectPacket(int seed)
+{
+    Board* board = GardenBoard();
+    if (!gardenSandbox || !GardenAdvancedAvailable(board) || !board->mSeedBank) return -1;
+    for (int i = 0; i < board->mSeedBank->mNumPackets; ++i) {
+        SeedPacket& packet = board->mSeedBank->mSeedPackets[i];
+        if (int(packet.mPacketType) == seed && packet.CanPickUp())
+            return (packet.mX + packet.mOffsetX + packet.mWidth / 2 + board->mSeedBank->mX + board->mX) +
+                   (packet.mY + packet.mHeight / 2 + board->mSeedBank->mY + board->mY) * 1024;
+    }
+    return -1;
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectCell(int col, int row)
+{
+    Board* board = GardenBoard();
+    if (!gardenSandbox || !GardenAdvancedAvailable(board) ||
+        col < 0 || col >= MAX_GRID_SIZE_X || row < 0 || row >= MAX_GRID_SIZE_Y) return -1;
+    return board->GridToPixelX(col, row) + 40 + board->mX +
+           (board->GridToPixelY(col, row) + 40 + board->mY) * 1024;
+}
+
+// Read seed chooser coordinates only after its native input is enabled.
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectChooser(int seed)
+{
+    if (!gardenSandbox || !gLawnApp || gLawnApp->GetDialogCount() ||
+        !gLawnApp->mSeedChooserScreen || !gLawnApp->mBoard) return -1;
+    auto* chooser = gLawnApp->mSeedChooserScreen.get();
+    if (!chooser->mMouseVisible || chooser->mSeedsInFlight ||
+        chooser->mChooseState != SeedChooserState::CHOOSE_NORMAL) return -1;
+    if (seed == -1) return chooser->mSeedsInBank == gLawnApp->mBoard->mSeedBank->mNumPackets ? 1 : 0;
+    if (seed < 0 || seed >= int(SeedType::SEED_IMITATER) ||
+        !gLawnApp->HasSeedType(static_cast<SeedType>(seed))) return -3;
+    auto& card = chooser->mChosenSeeds[seed];
+    if (card.mSeedState == ChosenSeedState::SEED_IN_BANK) return -2;
+    if (card.mSeedState != ChosenSeedState::SEED_IN_CHOOSER) return -3;
+    return card.mX + chooser->mX + 24 + (card.mY + chooser->mY + 30) * 1024;
 }
 
 // Sandbox 2.0: explicit grid editing, limited to ordinary single-cell plants.
