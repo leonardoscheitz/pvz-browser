@@ -24,3 +24,12 @@ replace_once("\tmMaxExecutions = GetInteger(\"MaxExecutions\", 0);",
              "\tGardenInitializeSandbox(this);\n\tmMaxExecutions = GetInteger(\"MaxExecutions\", 0);")
 extension = Path(__file__).resolve().parents[1] / "engine" / "garden.inc"
 source.write_text(text + "\n" + extension.read_text(encoding="utf-8"), encoding="utf-8")
+
+# Suspend the existing wave scheduler without touching its counters.
+board_path = upstream / "src" / "Lawn" / "Board.cpp"
+board = board_path.read_text(encoding="utf-8")
+anchor = "void Board::UpdateZombieSpawning()\n{"
+if board.count(anchor) != 1:
+    raise RuntimeError("Pinned wave scheduler mismatch")
+board = board.replace(anchor, "extern bool GardenEditorWavesFrozen();\n\n" + anchor + "\n\tif (GardenEditorWavesFrozen()) return;", 1)
+board_path.write_text(board, encoding="utf-8")
