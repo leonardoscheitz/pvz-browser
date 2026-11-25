@@ -3,20 +3,26 @@ on:
   push:
     branches: [motor-menu-hack, goty-plus/motor-fase-2, goty-plus/sandbox-unlocked, goty-plus/sandbox-editor]
     paths: ['engine/garden.inc', 'scripts/patch_garden_engine.py', '.github/workflows/garden-engine.yml', 'tests/test_browser.py', 'garden.js', 'index.html']
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 concurrency:
-  group: garden-engine-${{ github.ref }}
+  group: garden-engine-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 permissions:
   contents: read
 jobs:
   build:
+    if: github.event_name != 'pull_request' || (github.head_ref == 'goty-plus/integracao-sandbox-fusion' && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/checkout@v6
         with:
           repository: wszqkzqk/PvZ-Portable
@@ -25,6 +31,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: emscripten-core/setup-emsdk@v16
+      - name: Verificar sintaxe dos scripts
+        run: |
+          python3 -m py_compile scripts/patch_garden_engine.py tests/test_browser.py
+          node --check game.js
+          node --check garden.js
       - name: Compilar o motor com os controles do jardim
         working-directory: upstream
         run: |
@@ -47,12 +58,27 @@ jobs:
           python3 -m pip install playwright
           python3 -m playwright install --with-deps chromium
           python3 -m unittest discover -s tests -p test_browser.py -k editor_sandbox_board
+      - name: Validar integração Sandbox e Fusion
+        if: github.head_ref == 'goty-plus/integracao-sandbox-fusion' || github.ref_name == 'goty-plus/integracao-sandbox-fusion'
+        env:
+          PVZ_REQUIRE_FUSION: '1'
+          PVZ_REQUIRE_EDITOR: '1'
+          PVZ_REQUIRE_ADVANCED: '1'
+        run: |
+          sha256sum vendor/pvz-garden.zip | cut -d' ' -f1 > vendor/pvz-garden.sha256
+          python3 scripts/build.py
+          python3 -m pip install playwright
+          python3 -m playwright install --with-deps chromium
+          python3 -m unittest discover -s tests -p test_browser.py -v
       - name: Registrar o motor no ramo de compilação
-        if: github.ref == 'refs/heads/motor-menu-hack' || github.ref == 'refs/heads/goty-plus/motor-fase-2' || github.ref == 'refs/heads/goty-plus/sandbox-unlocked' || github.ref == 'refs/heads/goty-plus/sandbox-editor'
+        if: github.ref == 'refs/heads/motor-menu-hack' || github.ref == 'refs/heads/goty-plus/motor-fase-2' || github.ref == 'refs/heads/goty-plus/sandbox-unlocked' || github.ref == 'refs/heads/goty-plus/sandbox-editor' || github.head_ref == 'goty-plus/integracao-sandbox-fusion' || github.ref_name == 'goty-plus/integracao-sandbox-fusion'
+        env:
+          TARGET_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           sha256sum vendor/pvz-garden.zip | cut -d' ' -f1 > vendor/pvz-garden.sha256
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add vendor/pvz-garden.zip vendor/pvz-garden.sha256
+          if git diff --cached --quiet; then exit 0; fi
           git commit -m "Compilar motor GOTY com controles do jardim"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git push origin "HEAD:refs/heads/${TARGET_BRANCH}"
