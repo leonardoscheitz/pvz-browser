@@ -16,7 +16,7 @@ const sandboxLevel = Number.isInteger(chosenLevel) && chosenLevel >= 1 && chosen
 if (sandbox) {
   document.title = fusion ? "Fusion — PvZ GOTY+" : "Sandbox — PvZ GOTY+";
   toolsLink.textContent = fusion ? "Sair do Fusion" : "Sair do Sandbox";
-  toolsLink.href = fusion ? "mods.html" : "./";
+  toolsLink.href = fusion ? "tools.html#mods" : "./";
   document.body.classList.add("sandbox-session");
   // The full-size native canvas is never resized for web controls.
   // Reuse the selector button; the exit action lives inside its modal.
