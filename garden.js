@@ -47,6 +47,23 @@ export function installGarden(module, canvas) {
     }
     menu.querySelector("#garden-chill-row").hidden = module._gardenState(9) < 0;
   }
+  const editor = menu.querySelector("#garden-editor");
+  const editorAvailable = () => typeof module._gardenEditorAvailable === "function" && module._gardenEditorAvailable() === 1;
+  function editPlant(remove) {
+    if (!editorAvailable()) { message.textContent = "Editor indisponível nesta fase."; return; }
+    const col = menu.querySelector("#editor-col").valueAsNumber;
+    const row = menu.querySelector("#editor-row").valueAsNumber;
+    const seed = Number(menu.querySelector("#editor-seed").value);
+    if (!Number.isInteger(col) || col < 1 || col > 9 || !Number.isInteger(row) || row < 1 || row > 6) {
+      message.textContent = "Escolha uma coluna de 1 a 9 e uma linha de 1 a 6.";
+      return;
+    }
+    const ok = remove ? module._gardenEditorRemove(col-1,row-1) : module._gardenEditorPlant(col-1,row-1,seed);
+    message.textContent = ok ? (remove ? "Planta removida." : "Planta invocada.") :
+      "Célula inválida, ocupada ou incompatível com o terreno.";
+  }
+  menu.querySelector("#editor-plant").onclick = () => editPlant(false);
+  menu.querySelector("#editor-remove").onclick = () => editPlant(true);
   let resume = false;
   const viewport = window.visualViewport;
   function fitMenu() {
@@ -87,6 +104,7 @@ export function installGarden(module, canvas) {
     speed.value = module._gardenState(3);
     message.textContent = "Partida pausada";
     refreshAdvanced();
+    editor.hidden = !editorAvailable();
     menu.showModal();
     fitMenu();
     viewport?.addEventListener("resize", fitMenu);
