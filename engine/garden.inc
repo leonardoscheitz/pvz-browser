@@ -106,6 +106,44 @@ static bool GardenAdvancedAvailable(Board* board)
         !board->HasConveyorBeltSeedBank() && !gLawnApp->IsSlotMachineLevel();
 }
 
+// Sandbox 2.0: explicit grid editing, limited to ordinary single-cell plants.
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorAvailable()
+{
+    Board* board = GardenBoard();
+    return gardenSandbox && GardenAdvancedAvailable(board) &&
+        !gLawnApp->IsWallnutBowlingLevel() && !board->HasLevelAwardDropped();
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorPlant(int col, int row, int seed)
+{
+    if (!gardenEditorAvailable() || col < 0 || col >= MAX_GRID_SIZE_X ||
+        row < 0 || row >= MAX_GRID_SIZE_Y) return 0;
+    Board* board = GardenBoard();
+    const SeedType type = static_cast<SeedType>(seed);
+    switch (type) {
+        case SeedType::SEED_PEASHOOTER: case SeedType::SEED_SUNFLOWER:
+        case SeedType::SEED_WALLNUT: case SeedType::SEED_SNOWPEA:
+        case SeedType::SEED_REPEATER: case SeedType::SEED_PUFFSHROOM:
+        case SeedType::SEED_FUMESHROOM: case SeedType::SEED_TALLNUT: break;
+        default: return 0;
+    }
+    if (board->GetTopPlantAt(col, row, PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION) ||
+        board->CanPlantAt(col, row, type) != PlantingReason::PLANTING_OK) return 0;
+    board->AddPlant(col, row, type, SeedType::SEED_NONE);
+    return 1;
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE int gardenEditorRemove(int col, int row)
+{
+    if (!gardenEditorAvailable() || col < 0 || col >= MAX_GRID_SIZE_X ||
+        row < 0 || row >= MAX_GRID_SIZE_Y) return 0;
+    Plant* plant = GardenBoard()->GetTopPlantAt(col, row, PlantPriority::TOPPLANT_ONLY_NORMAL_POSITION);
+    if (!plant || plant->mDead || plant->mSeedType == SeedType::SEED_COBCANNON ||
+        plant->mOnBungeeState != PlantOnBungeeState::NOT_ON_BUNGEE) return 0;
+    plant->Die();
+    return 1;
+}
+
 static void GardenResetModifiers()
 {
     gardenInfiniteSun = false;
