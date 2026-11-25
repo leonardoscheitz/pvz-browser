@@ -90,6 +90,8 @@ export function installGarden(module, canvas) {
     input.max = zombie ? "3000" : "10000";
     input.value = zombie ? "300" : "150";
     input.disabled = false;
+    byId("editor-damage-row").hidden = zombie;
+    byId("editor-damage").disabled = zombie;
   }
   byId("editor-target").onchange = targetChanged;
   byId("editor-inspect").onclick = () => {
@@ -102,18 +104,22 @@ export function installGarden(module, canvas) {
     byId("editor-health").value = max;
     byId("editor-rate").disabled = speed <= 0;
     if (speed > 0) byId("editor-rate").value = speed;
+    byId("editor-damage").disabled = zombie || speed <= 0;
+    if (!zombie) byId("editor-damage").value = read(4);
     message.textContent = "Vida atual: " + hp + "/" + max;
   };
   byId("editor-apply").onclick = () => {
     if (!editorAvailable()) return;
     const [col,row] = cell(), zombie = byId("editor-target").value === "zombie";
     const hp = val("editor-health"), rate = val("editor-rate"), editRate = !byId("editor-rate").disabled;
-    if (!integer(row,0,5) || (!zombie && !integer(col,0,8)) || !integer(hp,1,100000) ||
+    const damage = val("editor-damage"), editDamage = !zombie && !byId("editor-damage").disabled;
+    if ((editDamage && !integer(damage,10,1000)) || !integer(row,0,5) || (!zombie && !integer(col,0,8)) || !integer(hp,1,100000) ||
       (editRate && !integer(rate,zombie?50:80,zombie?3000:10000))) { message.textContent = "Atributos inválidos."; return; }
     const change = (field,value) => zombie ? module._gardenEditorZombieAttribute(row,field,value) : module._gardenEditorPlantAttribute(col,row,field,value);
     if (!change(1,hp)) { message.textContent = "Nenhuma entidade encontrada."; return; }
     const speedOk = !editRate || change(3,rate);
-    message.textContent = speedOk ? "Atributos aplicados." : "Vida aplicada; intervalo não suportado por esta entidade.";
+    const damageOk = !editDamage || change(4,damage);
+    message.textContent = speedOk && damageOk ? "Atributos aplicados." : "Vida aplicada; algum atributo não é suportado nesta entidade.";
   };
   for (const [id,action] of [["editor-freeze",2],["editor-regen",5]]) byId(id).onchange = () => {
     if (editorAvailable()) module._gardenEditorWave(action,Number(byId(id).checked));
