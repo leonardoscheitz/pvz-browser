@@ -100,10 +100,11 @@ Identidades híbridas e multiplicadores de dano não são gravados em saves.
 A instalação ativa um módulo incluído; importação de mods arbitrários,
 cenários versionados e rigs exclusivos completos ainda não estão disponíveis.
 
-A PR de integração compila a revisão fixada do PvZ-Portable e executa
-regressões de catálogo, plantio, custo, híbrido solar, isolamento e editor.
-A publicação depende dos resultados reais do CI; não confundir presença
-do código com a disponibilidade do binário no site.
+A integração utiliza o motor WASM compilado pelo GitHub Actions e o hash
+correspondente. Nesta publicação, os testes de navegador foram dispensados
+pelo responsável pelo projeto; as regressões permanecem no repositório.
+O workflow de Pages empacota o jogo e publica a revisão em revision.txt.
+O funcionamento das novas mecânicas em partidas reais ainda não foi validado.
 
 DESENVOLVIMENTO LOCAL
 Com Python 3.9 ou superior, na raiz do repositório:
