@@ -139,8 +139,8 @@ extern "C" EMSCRIPTEN_KEEPALIVE int gardenInspectPacket(int seed)
     for (int i = 0; i < board->mSeedBank->mNumPackets; ++i) {
         SeedPacket& packet = board->mSeedBank->mSeedPackets[i];
         if (int(packet.mPacketType) == seed && packet.CanPickUp())
-            return (packet.mX + packet.mOffsetX + packet.mWidth / 2 + board->mX) +
-                   (packet.mY + packet.mHeight / 2 + board->mY) * 1024;
+            return (packet.mX + packet.mOffsetX + packet.mWidth / 2 + board->mSeedBank->mX + board->mX) +
+                   (packet.mY + packet.mHeight / 2 + board->mSeedBank->mY + board->mY) * 1024;
     }
     return -1;
 }
